@@ -19,7 +19,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/cli.ts --format esm --clean --banner.js \"#!/usr/bin/env node\"",
+    "build": "tsup",
     "dev": "tsx src/cli.ts",
     "prepublishOnly": "npm run build"
   },
