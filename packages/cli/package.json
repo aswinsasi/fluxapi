@@ -6,7 +6,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AswanthManoj/fluxapi.git",
+    "url": "https://github.com/aswinsasi/fluxapi",
     "directory": "packages/cli"
   },
   "homepage": "https://fluxapi.dev",

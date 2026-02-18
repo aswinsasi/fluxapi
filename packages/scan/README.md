@@ -45,7 +45,7 @@ npx flux-scan https://myapp.com --network jio-4g
 
 ## Docs
 
-Full documentation: [github.com/AswanthManoj/fluxapi](https://github.com/AswanthManoj/fluxapi)
+Full documentation: [github.com/AswanthManoj/fluxapi](https://github.com/aswinsasi/fluxapi)
 
 ## License
 

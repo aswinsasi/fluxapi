@@ -51,7 +51,7 @@ git commit -m "feat: FluxAPI v0.1.0 — Lighthouse for API calls"
 # Don't add README/license (we already have them)
 
 # Then push:
-git remote add origin https://github.com/AswanthManoj/fluxapi.git
+git remote add origin https://github.com/aswinsasi/fluxapi
 git branch -M main
 git push -u origin main
 ```
@@ -176,7 +176,7 @@ Lighthouse for your API calls. Scans your web app and fails CI if API health sco
     network: jio-4g
 ```
 
-See [FluxAPI](https://github.com/AswanthManoj/fluxapi) for full docs.
+See [FluxAPI](https://github.com/aswinsasi/fluxapi) for full docs.
 EOF
 
 git add .
@@ -260,7 +260,7 @@ After setup, these will be your links:
 
 | What | URL |
 |------|-----|
-| GitHub Repo | https://github.com/AswanthManoj/fluxapi |
+| GitHub Repo | https://github.com/aswinsasi/fluxapi |
 | npm: @fluxiapi/scan | https://www.npmjs.com/package/@fluxiapi/scan |
 | npm: @fluxiapi/cli | https://www.npmjs.com/package/@fluxiapi/cli |
 | Landing Page | https://fluxapi.vercel.app (or fluxapi.dev) |

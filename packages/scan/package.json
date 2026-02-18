@@ -6,12 +6,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AswanthManoj/fluxapi.git",
+    "url": "https://github.com/aswinsasi/fluxapi.git",
     "directory": "packages/scan"
   },
   "homepage": "https://fluxapi.dev",
   "bugs": {
-    "url": "https://github.com/AswanthManoj/fluxapi/issues"
+    "url": "https://github.com/aswinsasi/fluxapi/issues"
   },
   "main": "dist/index.js",
   "module": "dist/index.mjs",

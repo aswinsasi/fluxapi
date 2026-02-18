@@ -1,6 +1,6 @@
 # @fluxiapi/cli
 
-CLI for [FluxAPI](https://github.com/AswanthManoj/fluxapi) — scan any URL for API anti-patterns.
+CLI for [FluxAPI](https://github.com/aswinsasi/fluxapi) — scan any URL for API anti-patterns.
 
 ```bash
 npx flux-scan https://myapp.com -o report.html
