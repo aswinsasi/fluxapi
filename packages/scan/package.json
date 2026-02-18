@@ -1,0 +1,65 @@
+{
+  "name": "@fluxiapi/scan",
+  "version": "0.1.0",
+  "description": "Lighthouse for your API calls — find waterfalls, duplicate fetches, N+1 patterns, and missing cache in your React app",
+  "author": "Aswin <aswin@fluxapi.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AswanthManoj/fluxapi.git",
+    "directory": "packages/scan"
+  },
+  "homepage": "https://fluxapi.dev",
+  "bugs": {
+    "url": "https://github.com/AswanthManoj/fluxapi/issues"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "build:observer": "tsup src/observer/inject.ts --format iife --global-name FluxObserver --outDir dist/observer --minify",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm test && npm run build"
+  },
+  "keywords": [
+    "api",
+    "performance",
+    "audit",
+    "lighthouse",
+    "scanner",
+    "react",
+    "tanstack-query",
+    "n-plus-1",
+    "waterfall",
+    "caching",
+    "devtools",
+    "network",
+    "api-health"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.33",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
+  }
+}

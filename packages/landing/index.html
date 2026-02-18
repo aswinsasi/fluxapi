@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FluxAPI — Lighthouse for Your API Calls</title>
+<meta name="description" content="Find request waterfalls, duplicate fetches, N+1 patterns, and missing cache headers in your React app. Get fix code in one click.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════ TOKENS ═══════════ */
+:root {
+  --bg: #07070e; --bg2: #0d0d1a; --bg3: #141428;
+  --fg: #e8eaed; --fg2: #9ca3af; --fg3: #6b7280;
+  --accent: #7c5cfc; --accent2: #a78bfa; --accent-glow: rgba(124,92,252,0.35);
+  --green: #34d399; --red: #f87171; --orange: #fbbf24; --blue: #60a5fa; --cyan: #22d3ee;
+  --border: rgba(255,255,255,0.06);
+  --font: 'Outfit', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ═══════════ BACKGROUND NOISE ═══════════ */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124,92,252,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(52,211,153,0.06) 0%, transparent 50%);
+}
+
+/* ═══════════ NAV ═══════════ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:14px 24px;display:flex;align-items:center;gap:20px;
+  background:rgba(7,7,14,0.8);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);
+}
+.nav-logo{display:flex;align-items:center;gap:8px;font-weight:900;font-size:17px;letter-spacing:-0.5px}
+.nav-logo svg{flex-shrink:0}
+.nav-links{display:flex;gap:24px;font-size:14px;font-weight:500;color:var(--fg2);margin-left:auto}
+.nav-links a{color:inherit;transition:color .15s}
+.nav-links a:hover{color:var(--fg);text-decoration:none}
+.nav-cta{
+  padding:7px 18px;background:var(--accent);color:white;border-radius:8px;font-size:13px;font-weight:700;
+  font-family:var(--font);border:none;cursor:pointer;transition:all .15s;text-decoration:none;
+}
+.nav-cta:hover{filter:brightness(1.15);text-decoration:none}
+
+/* ═══════════ HERO ═══════════ */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:120px 24px 80px;position:relative;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:99px;
+  border:1px solid var(--border);font-size:12px;color:var(--fg2);margin-bottom:24px;
+  font-family:var(--mono);letter-spacing:0.5px;
+  background:rgba(124,92,252,0.06);
+}
+.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+h1{
+  font-size:clamp(40px,7vw,82px);font-weight:900;line-height:0.95;letter-spacing:-3px;
+  max-width:800px;margin-bottom:20px;
+}
+h1 .gradient{
+  background:linear-gradient(135deg,var(--accent2),var(--cyan),var(--green));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--fg2);max-width:540px;font-weight:300;line-height:1.5;margin-bottom:36px}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+.btn-primary{
+  padding:12px 28px;background:var(--accent);color:white;border-radius:10px;
+  font-size:15px;font-weight:700;font-family:var(--font);border:none;cursor:pointer;
+  transition:all .2s;display:inline-flex;align-items:center;gap:8px;
+  box-shadow:0 0 40px var(--accent-glow);text-decoration:none;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 60px var(--accent-glow);filter:brightness(1.1);text-decoration:none}
+.btn-secondary{
+  padding:12px 28px;background:transparent;color:var(--fg);border-radius:10px;
+  font-size:15px;font-weight:500;font-family:var(--font);border:1px solid var(--border);
+  cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px;text-decoration:none;
+}
+.btn-secondary:hover{border-color:var(--fg3);background:rgba(255,255,255,0.03);text-decoration:none}
+
+/* ═══════════ TERMINAL DEMO ═══════════ */
+.terminal-wrapper{
+  max-width:680px;width:100%;margin:48px auto 0;perspective:1200px;
+}
+.terminal{
+  background:#0c0c18;border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 20px 80px rgba(0,0,0,0.5),0 0 60px rgba(124,92,252,0.08);
+  transform:rotateX(2deg);transition:transform 0.4s;
+}
+.terminal:hover{transform:rotateX(0deg)}
+.terminal-bar{
+  display:flex;align-items:center;gap:7px;padding:10px 14px;background:rgba(255,255,255,0.03);border-bottom:1px solid var(--border);
+}
+.terminal-dot{width:10px;height:10px;border-radius:50%}
+.terminal-dot.r{background:#ff5f57}.terminal-dot.y{background:#febc2e}.terminal-dot.g{background:#28c840}
+.terminal-title{margin-left:8px;font-size:11px;color:var(--fg3);font-family:var(--mono)}
+.terminal-body{padding:16px;font-family:var(--mono);font-size:13px;line-height:1.7;min-height:240px}
+.terminal-body .prompt{color:var(--green)}
+.terminal-body .cmd{color:var(--fg)}
+.terminal-body .out{color:var(--fg2)}
+.terminal-body .score-line{font-weight:700}
+.terminal-body .good{color:var(--green)}
+.terminal-body .warn{color:var(--orange)}
+.terminal-body .bad{color:var(--red)}
+.terminal-body .accent{color:var(--accent2)}
+.terminal-body .dim{color:var(--fg3)}
+
+.type-cursor{display:inline-block;width:8px;height:16px;background:var(--fg);animation:cursor-blink 1s step-end infinite;vertical-align:middle;margin-left:2px}
+@keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ═══════════ WHAT IT FINDS (Feature Grid) ═══════════ */
+.section{padding:100px 24px}
+.section-title{
+  font-size:clamp(28px,4vw,44px);font-weight:900;letter-spacing:-1.5px;text-align:center;margin-bottom:12px;
+}
+.section-sub{text-align:center;color:var(--fg2);font-size:16px;max-width:500px;margin:0 auto 48px;font-weight:300}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:960px;margin:0 auto}
+.card{
+  padding:24px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);
+  transition:all .25s;position:relative;overflow:hidden;
+}
+.card:hover{border-color:rgba(124,92,252,0.3);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.3)}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:0;transition:opacity .3s;
+}
+.card:hover::before{opacity:1}
+.card-icon{font-size:28px;margin-bottom:12px}
+.card-title{font-size:16px;font-weight:700;margin-bottom:6px}
+.card-desc{font-size:13px;color:var(--fg2);line-height:1.6}
+.card-badge{
+  display:inline-block;margin-top:10px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:0.5px;font-family:var(--mono);
+}
+.card-badge.crit{background:rgba(248,113,113,0.12);color:var(--red)}
+.card-badge.warn{background:rgba(251,191,36,0.12);color:var(--orange)}
+.card-badge.fix{background:rgba(52,211,153,0.12);color:var(--green)}
+
+/* ═══════════ HOW IT WORKS ═══════════ */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;max-width:900px;margin:0 auto}
+.step{text-align:center;padding:20px}
+.step-num{
+  width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900;margin:0 auto 14px;
+  background:linear-gradient(135deg,var(--accent),var(--cyan));color:var(--bg);
+}
+.step-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.step-desc{font-size:13px;color:var(--fg2)}
+
+/* ═══════════ CODE SAMPLE ═══════════ */
+.code-section{max-width:720px;margin:0 auto}
+.code-block{
+  background:#0c0c18;border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  font-family:var(--mono);font-size:13px;line-height:1.7;
+}
+.code-header{padding:8px 14px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.code-lang{font-size:11px;color:var(--fg3);font-family:var(--mono)}
+.code-copy{margin-left:auto;background:transparent;border:1px solid var(--border);color:var(--fg3);padding:2px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:var(--mono)}
+.code-copy:hover{color:var(--fg);border-color:var(--fg3)}
+.code-body{padding:16px;overflow-x:auto}
+.code-body .kw{color:#c678dd}
+.code-body .fn{color:#61afef}
+.code-body .str{color:#98c379}
+.code-body .cm{color:#5c6370;font-style:italic}
+.code-body .num{color:#d19a66}
+.code-body .op{color:#56b6c2}
+
+/* ═══════════ SCORING ═══════════ */
+.score-demo{display:flex;justify-content:center;gap:32px;flex-wrap:wrap;max-width:600px;margin:0 auto}
+.score-gauge{text-align:center}
+.gauge-ring{width:100px;height:100px;position:relative}
+.gauge-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.gauge-ring .track{fill:none;stroke:var(--bg3);stroke-width:7}
+.gauge-ring .value{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dasharray 1.5s ease}
+.gauge-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900}
+.gauge-label{font-size:12px;color:var(--fg3);margin-top:6px}
+
+/* ═══════════ CTA ═══════════ */
+.cta-section{
+  text-align:center;padding:80px 24px 100px;
+  background:radial-gradient(ellipse 80% 60% at 50% 100%, rgba(124,92,252,0.08) 0%, transparent 60%);
+}
+.cta-section h2{font-size:clamp(28px,4vw,42px);font-weight:900;letter-spacing:-1.5px;margin-bottom:12px}
+.cta-section p{color:var(--fg2);font-size:16px;margin-bottom:28px;font-weight:300}
+
+/* ═══════════ FOOTER ═══════════ */
+footer{
+  text-align:center;padding:24px;border-top:1px solid var(--border);font-size:12px;color:var(--fg3);
+}
+footer a{color:var(--fg3)}
+
+/* ═══════════ RESPONSIVE ═══════════ */
+@media(max-width:640px){
+  nav{padding:10px 16px}.nav-links{display:none}
+  h1{letter-spacing:-1.5px}
+  .terminal-wrapper{margin-top:32px}
+  .grid{grid-template-columns:1fr}
+  .score-demo{gap:20px}
+}
+
+/* ═══════════ ANIMATIONS ═══════════ */
+.fade-in{opacity:0;transform:translateY(20px);transition:all .6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">
+    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="8" fill="#7c5cfc"/>
+      <path d="M8 10h16M8 16h12M8 22h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    FluxAPI
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how-it-works">How it Works</a>
+    <a href="#scoring">Scoring</a>
+    <a href="https://github.com/AswanthManoj/fluxapi">GitHub</a>
+  </div>
+  <a href="#get-started" class="nav-cta">Get Started</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    v0.1.0 — now in public beta
+  </div>
+  <h1>
+    <span class="gradient">Lighthouse</span> for<br>your API calls
+  </h1>
+  <p class="hero-sub">
+    Scans your React app's network layer. Finds waterfalls, duplicate fetches, N+1 patterns, and missing cache. Generates fix code you can copy-paste.
+  </p>
+  <div class="hero-actions">
+    <a href="#get-started" class="btn-primary">⚡ npx flux-scan</a>
+    <a href="https://github.com/AswanthManoj/fluxapi" class="btn-secondary">View on GitHub →</a>
+  </div>
+
+  <!-- Terminal Demo -->
+  <div class="terminal-wrapper">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot r"></div>
+        <div class="terminal-dot y"></div>
+        <div class="terminal-dot g"></div>
+        <span class="terminal-title">Terminal</span>
+      </div>
+      <div class="terminal-body" id="terminalBody">
+        <div><span class="prompt">$</span> <span class="cmd">npx flux-scan https://myapp.com --network jio-4g</span></div>
+        <div class="dim" style="margin:4px 0">
+          ⠙ Scanning... [████████████████████] 30s
+        </div>
+        <br>
+        <div class="out">╔════════════════════════════════════════════════════╗</div>
+        <div class="out">║  FluxAPI Report — Score: <span class="bad">38</span>/100 (<span class="bad">poor</span>)            ║</div>
+        <div class="out">╚════════════════════════════════════════════════════╝</div>
+        <br>
+        <div class="out">  <span class="accent">⚡ Efficiency</span>   <span class="bad">██████░░░░░░░░░░░░░░ 30%</span></div>
+        <div class="out">  <span class="accent">💾 Caching</span>      <span class="warn">████████████░░░░░░░░ 55%</span></div>
+        <div class="out">  <span class="accent">🔄 Patterns</span>     <span class="good">████████████████████ 100%</span></div>
+        <br>
+        <div class="out">  Issues Found:</div>
+        <div class="out">    <span class="bad">🔴 8 critical</span>  <span class="warn">🟡 3 warnings</span>  <span class="dim">ℹ️  1 info</span></div>
+        <br>
+        <div class="out">  Top Fixes:</div>
+        <div class="out">    <span class="accent">E2:</span> GET /api/user called 4x from 4 components</div>
+        <div class="out">       <span class="good">⚡ 600ms faster  📉 3 fewer requests</span></div>
+        <div class="out">    <span class="accent">E3:</span> N+1: 25 individual GET /products/:id</div>
+        <div class="out">       <span class="good">⚡ 2.1s faster  📉 24 fewer requests</span></div>
+        <div class="out">    <span class="accent">C1:</span> No cache headers on 5 endpoints</div>
+        <div class="out">       <span class="good">💾 48KB bandwidth saved</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- What It Finds -->
+<section class="section" id="features">
+  <h2 class="section-title fade-in">What it finds</h2>
+  <p class="section-sub fade-in">5 audit rules that catch the API anti-patterns killing your app performance</p>
+
+  <div class="grid">
+    <div class="card fade-in">
+      <div class="card-icon">🔗</div>
+      <div class="card-title">Request Waterfalls</div>
+      <div class="card-desc">Sequential API calls with no data dependency. Request B waits for A to finish. Could run in parallel with Promise.all.</div>
+      <span class="card-badge crit">E1 · Critical</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">👯</div>
+      <div class="card-title">Duplicate Requests</div>
+      <div class="card-desc">Header, Sidebar, and ProfileCard each call GET /api/user. TanStack Query deduplicates this — but only if you use a shared hook.</div>
+      <span class="card-badge crit">E2 · Critical</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">💥</div>
+      <div class="card-title">N+1 Query Pattern</div>
+      <div class="card-desc">Product list page fires GET /products/1, /products/2... ×25. Classic N+1. One batch endpoint eliminates 24 requests.</div>
+      <span class="card-badge crit">E3 · Critical</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🚫</div>
+      <div class="card-title">No Cache Strategy</div>
+      <div class="card-desc">Endpoints with zero caching — no Cache-Control, no ETag, no staleTime. Every mount triggers a fresh network round-trip.</div>
+      <span class="card-badge crit">C1 · Critical</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🔄</div>
+      <div class="card-title">Under-Caching</div>
+      <div class="card-desc">95% of fetches return identical data. Compares response hashes and recommends the optimal staleTime for your data change frequency.</div>
+      <span class="card-badge warn">C2 · Warning</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🔧</div>
+      <div class="card-title">Auto-Generated Fixes</div>
+      <div class="card-desc">Every violation comes with copy-pasteable React + TanStack Query code. Shared hooks, useSuspenseQueries, batch patterns — ready to ship.</div>
+      <span class="card-badge fix">Auto-fixable</span>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section class="section" id="how-it-works" style="background:var(--bg2)">
+  <h2 class="section-title fade-in">Three steps. Sixty seconds.</h2>
+  <p class="section-sub fade-in">No config, no setup, no SDK integration</p>
+
+  <div class="steps">
+    <div class="step fade-in">
+      <div class="step-num">1</div>
+      <div class="step-title">Scan</div>
+      <div class="step-desc">Run <code style="color:var(--accent2)">npx flux-scan</code> against any URL. Puppeteer opens the page and captures every API request via Chrome DevTools Protocol.</div>
+    </div>
+    <div class="step fade-in">
+      <div class="step-num">2</div>
+      <div class="step-title">Analyze</div>
+      <div class="step-desc">5 audit rules score your API layer 0-100. Network-adjusted scoring shows how patterns compound on Jio 4G vs WiFi.</div>
+    </div>
+    <div class="step fade-in">
+      <div class="step-num">3</div>
+      <div class="step-title">Fix</div>
+      <div class="step-desc">Each violation generates React + TanStack Query code you can copy-paste. The HTML report has one-click clipboard for every fix.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Scoring -->
+<section class="section" id="scoring">
+  <h2 class="section-title fade-in">Network-adjusted scoring</h2>
+  <p class="section-sub fade-in">Same code, different scores. A waterfall costs 3x more on Jio 4G than WiFi.</p>
+
+  <div class="score-demo fade-in">
+    <div class="score-gauge">
+      <div class="gauge-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="track" cx="50" cy="50" r="42"/>
+          <circle class="value" cx="50" cy="50" r="42" stroke-dasharray="198 264" style="stroke:var(--orange)"/>
+        </svg>
+        <div class="gauge-num" style="color:var(--orange)">75</div>
+      </div>
+      <div class="gauge-label">WiFi</div>
+    </div>
+    <div class="score-gauge">
+      <div class="gauge-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="track" cx="50" cy="50" r="42"/>
+          <circle class="value" cx="50" cy="50" r="42" stroke-dasharray="127 264" style="stroke:var(--red)"/>
+        </svg>
+        <div class="gauge-num" style="color:var(--red)">48</div>
+      </div>
+      <div class="gauge-label">Jio 4G</div>
+    </div>
+    <div class="score-gauge">
+      <div class="gauge-ring">
+        <svg viewBox="0 0 100 100">
+          <circle class="track" cx="50" cy="50" r="42"/>
+          <circle class="value" cx="50" cy="50" r="42" stroke-dasharray="79 264" style="stroke:var(--red)"/>
+        </svg>
+        <div class="gauge-num" style="color:var(--red)">30</div>
+      </div>
+      <div class="gauge-label">BSNL 2G</div>
+    </div>
+  </div>
+</section>
+
+<!-- Get Started -->
+<section class="section" id="get-started" style="background:var(--bg2)">
+  <h2 class="section-title fade-in">Get started in 10 seconds</h2>
+  <p class="section-sub fade-in">No account, no API key, no install</p>
+
+  <div class="code-section fade-in">
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">terminal</span>
+        <button class="code-copy" onclick="this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500);navigator.clipboard.writeText('npx flux-scan https://your-app.com -o report.html')">Copy</button>
+      </div>
+      <div class="code-body">
+<pre><span class="cm"># Scan any URL and get an HTML report</span>
+<span class="prompt">$</span> npx flux-scan https://your-app.com -o report.html
+
+<span class="cm"># Score for Indian mobile networks</span>
+<span class="prompt">$</span> npx flux-scan https://your-app.com --network jio-4g
+
+<span class="cm"># In CI/CD (fails build if score &lt; 70)</span>
+<span class="prompt">$</span> npx flux-scan https://staging.your-app.com --threshold 70
+
+<span class="cm"># Or use the GitHub Action</span>
+- <span class="kw">uses</span>: fluxapi/scan-action@v1
+  <span class="kw">with</span>:
+    <span class="fn">url</span>: <span class="str">https://staging.your-app.com</span>
+    <span class="fn">threshold</span>: <span class="num">70</span>
+    <span class="fn">network</span>: <span class="str">jio-4g</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2 class="fade-in">Stop shipping slow APIs</h2>
+  <p class="fade-in">One command. Sixty seconds. Copy-paste fixes.</p>
+  <div class="hero-actions fade-in">
+    <a href="https://github.com/AswanthManoj/fluxapi" class="btn-primary">⚡ Star on GitHub</a>
+    <a href="#get-started" class="btn-secondary">Read the Docs →</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  Built by <a href="https://github.com/AswanthManoj">Aswin</a> · <a href="https://github.com/AswanthManoj/fluxapi">GitHub</a> · MIT License
+</footer>
+
+<script>
+// Scroll-triggered fade-in
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

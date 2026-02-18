@@ -1,0 +1,198 @@
+name: 'FluxAPI Scan'
+description: 'Lighthouse for your API calls. Scans your web app for API anti-patterns and fails CI if score is below threshold.'
+author: 'FluxAPI'
+
+branding:
+  icon: 'zap'
+  color: 'purple'
+
+inputs:
+  url:
+    description: 'URL to scan (can be local or deployed)'
+    required: true
+
+  duration:
+    description: 'Scan duration in seconds'
+    required: false
+    default: '30'
+
+  network:
+    description: 'Network profile for scoring (wifi, jio-4g, airtel-3g, bsnl-2g, slow-3g)'
+    required: false
+    default: 'wifi'
+
+  threshold:
+    description: 'Minimum score to pass (0-100). CI fails if score is below this.'
+    required: false
+    default: '50'
+
+  output:
+    description: 'Path to save the HTML report'
+    required: false
+    default: 'fluxapi-report.html'
+
+  session-file:
+    description: 'Path to a saved session JSON (skip live scan)'
+    required: false
+    default: ''
+
+  fail-on-critical:
+    description: 'Fail CI if any critical violations are found'
+    required: false
+    default: 'false'
+
+  upload-artifact:
+    description: 'Upload report as GitHub Actions artifact'
+    required: false
+    default: 'true'
+
+outputs:
+  score:
+    description: 'Overall API health score (0-100)'
+    value: ${{ steps.scan.outputs.score }}
+
+  grade:
+    description: 'Grade (excellent, good, needs-work, poor)'
+    value: ${{ steps.scan.outputs.grade }}
+
+  violations:
+    description: 'Total number of violations found'
+    value: ${{ steps.scan.outputs.violations }}
+
+  critical-count:
+    description: 'Number of critical violations'
+    value: ${{ steps.scan.outputs.critical_count }}
+
+  report-path:
+    description: 'Path to the generated HTML report'
+    value: ${{ steps.scan.outputs.report_path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install FluxAPI CLI
+      shell: bash
+      run: npm install -g @fluxiapi/cli@latest
+
+    - name: Install Puppeteer browser
+      shell: bash
+      run: npx puppeteer browsers install chrome
+
+    - name: Run FluxAPI Scan
+      id: scan
+      shell: bash
+      env:
+        FLUX_URL: ${{ inputs.url }}
+        FLUX_DURATION: ${{ inputs.duration }}
+        FLUX_NETWORK: ${{ inputs.network }}
+        FLUX_THRESHOLD: ${{ inputs.threshold }}
+        FLUX_OUTPUT: ${{ inputs.output }}
+        FLUX_SESSION: ${{ inputs.session-file }}
+        FLUX_FAIL_CRITICAL: ${{ inputs.fail-on-critical }}
+      run: |
+        set +e
+
+        # Build CLI arguments
+        ARGS=""
+
+        if [ -n "$FLUX_SESSION" ]; then
+          ARGS="--session $FLUX_SESSION"
+        else
+          ARGS="$FLUX_URL"
+        fi
+
+        ARGS="$ARGS --duration $FLUX_DURATION"
+        ARGS="$ARGS --network $FLUX_NETWORK"
+        ARGS="$ARGS --output $FLUX_OUTPUT"
+
+        echo "::group::FluxAPI Scan"
+        echo "⚡ Scanning $FLUX_URL..."
+        echo "  Duration: ${FLUX_DURATION}s"
+        echo "  Network:  $FLUX_NETWORK"
+        echo "  Threshold: $FLUX_THRESHOLD"
+        echo ""
+
+        # Run the scan (also outputs to console)
+        flux-scan $ARGS --format console 2>&1 | tee /tmp/flux-output.txt
+        EXIT_CODE=$?
+
+        echo "::endgroup::"
+
+        # Parse score from console output
+        SCORE=$(grep -oP 'Score: \K[0-9.]+' /tmp/flux-output.txt | head -1 || echo "0")
+        GRADE=$(grep -oP '\((\w+(-\w+)?)\)' /tmp/flux-output.txt | head -1 | tr -d '()' || echo "unknown")
+        VIOLATIONS=$(grep -oP '\d+ critical' /tmp/flux-output.txt | grep -oP '\d+' || echo "0")
+        CRITICALS=$(grep -oP '🔴 \K\d+' /tmp/flux-output.txt || echo "0")
+
+        # If score parse failed, try to get from JSON
+        if [ -z "$SCORE" ] || [ "$SCORE" = "0" ]; then
+          # Generate JSON as fallback
+          flux-scan $ARGS --format json --output /tmp/flux-report.json 2>/dev/null
+          if [ -f /tmp/flux-report.json ]; then
+            SCORE=$(python3 -c "import json; print(json.load(open('/tmp/flux-report.json'))['score']['overall'])" 2>/dev/null || echo "0")
+            GRADE=$(python3 -c "import json; print(json.load(open('/tmp/flux-report.json'))['score']['grade'])" 2>/dev/null || echo "unknown")
+          fi
+        fi
+
+        # Set outputs
+        echo "score=$SCORE" >> $GITHUB_OUTPUT
+        echo "grade=$GRADE" >> $GITHUB_OUTPUT
+        echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+        echo "critical_count=$CRITICALS" >> $GITHUB_OUTPUT
+        echo "report_path=$FLUX_OUTPUT" >> $GITHUB_OUTPUT
+
+        # Summary
+        echo "## ⚡ FluxAPI Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${SCORE%.*}" -ge 90 ]; then
+          echo "### 🟢 Score: $SCORE/100 — $GRADE" >> $GITHUB_STEP_SUMMARY
+        elif [ "${SCORE%.*}" -ge 70 ]; then
+          echo "### 🔵 Score: $SCORE/100 — $GRADE" >> $GITHUB_STEP_SUMMARY
+        elif [ "${SCORE%.*}" -ge 50 ]; then
+          echo "### 🟡 Score: $SCORE/100 — $GRADE" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "### 🔴 Score: $SCORE/100 — $GRADE" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Score | $SCORE/100 |" >> $GITHUB_STEP_SUMMARY
+        echo "| Grade | $GRADE |" >> $GITHUB_STEP_SUMMARY
+        echo "| Violations | $VIOLATIONS |" >> $GITHUB_STEP_SUMMARY
+        echo "| Critical | $CRITICALS |" >> $GITHUB_STEP_SUMMARY
+        echo "| Network | $FLUX_NETWORK |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        # Check threshold
+        SCORE_INT=${SCORE%.*}
+        if [ "$SCORE_INT" -lt "$FLUX_THRESHOLD" ]; then
+          echo "❌ Score $SCORE is below threshold $FLUX_THRESHOLD" >> $GITHUB_STEP_SUMMARY
+          echo ""
+          echo "::error::FluxAPI score $SCORE is below threshold $FLUX_THRESHOLD"
+          exit 1
+        fi
+
+        # Check critical violations
+        if [ "$FLUX_FAIL_CRITICAL" = "true" ] && [ "$CRITICALS" -gt 0 ]; then
+          echo "❌ Found $CRITICALS critical violations" >> $GITHUB_STEP_SUMMARY
+          echo ""
+          echo "::error::FluxAPI found $CRITICALS critical violations"
+          exit 1
+        fi
+
+        echo "✅ Passed! Score: $SCORE/100" >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload Report Artifact
+      if: inputs.upload-artifact == 'true' && always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fluxapi-report
+        path: ${{ inputs.output }}
+        if-no-files-found: ignore

@@ -1,0 +1,42 @@
+{
+  "name": "@fluxiapi/cli",
+  "version": "0.1.0",
+  "description": "CLI for FluxAPI — scan any URL for API anti-patterns",
+  "author": "Aswin <aswin@fluxapi.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AswanthManoj/fluxapi.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://fluxapi.dev",
+  "bin": {
+    "flux-scan": "./dist/cli.mjs"
+  },
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/cli.ts --format esm --clean --banner.js \"#!/usr/bin/env node\"",
+    "dev": "tsx src/cli.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@fluxiapi/scan": "^0.1.0"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^22.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "keywords": ["fluxapi", "api", "scanner", "cli", "performance"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
