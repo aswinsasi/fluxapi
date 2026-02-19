@@ -5,143 +5,307 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FluxAPI</title>
 <style>
-  :root {
-    --bg: #1e1e2e; --bg2: #181825; --bg3: #313244;
-    --fg: #cdd6f4; --fg2: #a6adc8; --fg3: #6c7086;
-    --accent: #89b4fa; --accent2: #b4befe;
-    --red: #f38ba8; --orange: #fab387; --green: #a6e3a1; --blue: #89b4fa;
-    --border: #45475a;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-    --mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 13px; line-height: 1.5; }
+/* ═══════════ TOKENS ═══════════ */
+:root {
+  --bg: #0e0e1a; --bg2: #13132a; --bg3: #1c1c3a; --bg4: #252550;
+  --fg: #e2e4f0; --fg2: #9ca3bf; --fg3: #636b83;
+  --accent: #7c6afc; --accent2: #9d8cff; --accent-glow: rgba(124,106,252,0.25);
+  --green: #3dd68c; --red: #f06b7e; --orange: #f0a84a; --blue: #5ba8f5; --cyan: #40d9d9;
+  --border: rgba(255,255,255,0.06);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+  --radius: 8px;
+  --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 12px; line-height: 1.5; overflow: hidden; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--fg3); }
 
-  .panel { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.panel { display: flex; flex-direction: column; height: 100vh; }
 
-  /* ─── Header ─── */
-  .header {
-    display: flex; align-items: center; gap: 12px; padding: 8px 12px;
-    border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0;
-  }
-  .logo { display: flex; align-items: center; gap: 6px; font-weight: 700; color: var(--accent); font-size: 14px; }
-  .logo svg { flex-shrink: 0; }
+/* ═══════════ HEADER ═══════════ */
+.header {
+  display: flex; align-items: center; gap: 10px; padding: 6px 12px;
+  background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0;
+  position: relative; z-index: 10;
+}
+.header::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+}
+.logo { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 13px; letter-spacing: -0.3px; }
+.logo .icon {
+  width: 20px; height: 20px; background: var(--accent); border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo .icon svg { width: 12px; height: 12px; }
 
-  .scan-btn {
-    padding: 5px 16px; border: none; border-radius: 6px; cursor: pointer;
-    font-size: 12px; font-weight: 600; font-family: var(--font); transition: all 0.15s;
-  }
-  .scan-btn.start { background: var(--green); color: #1e1e2e; }
-  .scan-btn.start:hover { filter: brightness(1.1); }
-  .scan-btn.stop { background: var(--red); color: #1e1e2e; }
-  .scan-btn.analyzing { background: var(--blue); color: #1e1e2e; opacity: 0.7; cursor: wait; }
+.scan-btn {
+  padding: 4px 14px; border: none; border-radius: 6px; cursor: pointer;
+  font-size: 11px; font-weight: 700; font-family: var(--font); transition: all var(--transition);
+  letter-spacing: 0.3px; text-transform: uppercase;
+}
+.scan-btn.start {
+  background: linear-gradient(135deg, var(--green), #2bc47a); color: #0a1a12;
+  box-shadow: 0 2px 12px rgba(61,214,140,0.25);
+}
+.scan-btn.start:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.scan-btn.stop {
+  background: linear-gradient(135deg, var(--red), #e04a5e); color: white;
+  box-shadow: 0 2px 12px rgba(240,107,126,0.25);
+  animation: pulse-stop 2s infinite;
+}
+@keyframes pulse-stop { 0%,100% { box-shadow: 0 2px 12px rgba(240,107,126,0.25); } 50% { box-shadow: 0 2px 20px rgba(240,107,126,0.4); } }
+.scan-btn.analyzing { background: var(--bg4); color: var(--fg2); cursor: wait; }
 
-  .status { font-size: 12px; color: var(--fg3); }
-  .status .count { color: var(--accent); font-weight: 700; }
+.status { font-size: 11px; color: var(--fg3); font-family: var(--mono); }
 
-  .header-actions { margin-left: auto; display: flex; gap: 8px; }
-  .icon-btn {
-    background: transparent; border: 1px solid var(--border); color: var(--fg2);
-    padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 11px;
-    font-family: var(--font); transition: all 0.15s;
-  }
-  .icon-btn:hover { background: var(--bg3); color: var(--fg); }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.net-select {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--fg2);
+  padding: 3px 6px; border-radius: 5px; font-size: 10px; font-family: var(--font); cursor: pointer;
+}
+.h-btn {
+  background: var(--bg3); border: 1px solid var(--border); color: var(--fg3);
+  padding: 3px 8px; border-radius: 5px; cursor: pointer; font-size: 10px;
+  font-family: var(--font); transition: all var(--transition);
+}
+.h-btn:hover { color: var(--fg); border-color: var(--fg3); }
 
-  .network-select {
-    background: var(--bg3); border: 1px solid var(--border); color: var(--fg2);
-    padding: 4px 8px; border-radius: 5px; font-size: 11px; font-family: var(--font);
-  }
+/* ═══════════ TABS ═══════════ */
+.tabs {
+  display: flex; border-bottom: 1px solid var(--border); background: var(--bg2); flex-shrink: 0;
+}
+.tab {
+  padding: 6px 16px; font-size: 11px; font-weight: 600; color: var(--fg3);
+  border: none; background: none; cursor: pointer; position: relative;
+  transition: color var(--transition); font-family: var(--font);
+}
+.tab:hover { color: var(--fg2); }
+.tab.active { color: var(--accent2); }
+.tab.active::after {
+  content: ''; position: absolute; bottom: -1px; left: 8px; right: 8px; height: 2px;
+  background: var(--accent); border-radius: 2px 2px 0 0;
+}
+.tab .badge {
+  display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 99px;
+  font-size: 9px; font-weight: 700; background: var(--bg4); color: var(--fg3);
+}
+.tab .badge.critical { background: rgba(240,107,126,0.15); color: var(--red); }
 
-  /* ─── Content ─── */
-  .content { flex: 1; overflow-y: auto; padding: 12px; }
+/* ═══════════ CONTENT ═══════════ */
+.content { flex: 1; overflow-y: auto; }
+.tab-panel { display: none; padding: 12px; min-height: 100%; }
+.tab-panel.active { display: block; }
 
-  /* ─── Idle State ─── */
-  .idle-state {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    height: 100%; color: var(--fg3); text-align: center; gap: 12px;
-  }
-  .idle-state .big-icon { font-size: 48px; opacity: 0.4; }
-  .idle-state h2 { font-size: 16px; color: var(--fg2); }
-  .idle-state p { font-size: 12px; max-width: 300px; }
+/* ═══════════ IDLE STATE ═══════════ */
+.idle {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: calc(100vh - 80px); text-align: center; gap: 10px;
+}
+.idle .glow {
+  width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  background: var(--bg3); font-size: 28px; position: relative;
+}
+.idle .glow::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 20px;
+  background: radial-gradient(circle, var(--accent-glow), transparent 70%); z-index: -1;
+}
+.idle h2 { font-size: 15px; font-weight: 700; color: var(--fg); }
+.idle p { font-size: 12px; color: var(--fg3); max-width: 280px; line-height: 1.6; }
+.idle code { background: var(--bg3); padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--accent2); }
 
-  /* ─── Live Counter ─── */
-  .live-view { text-align: center; padding-top: 60px; }
-  .live-count { font-size: 72px; font-weight: 800; color: var(--accent); line-height: 1; }
-  .live-label { font-size: 14px; color: var(--fg3); margin-top: 4px; }
-  .live-timer { font-size: 20px; color: var(--fg2); margin-top: 16px; font-family: var(--mono); }
-  .pulse { animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+/* ═══════════ LIVE VIEW ═══════════ */
+.live { text-align: center; padding-top: 40px; }
+.live-num {
+  font-size: 64px; font-weight: 900; letter-spacing: -3px; line-height: 1;
+  background: linear-gradient(135deg, var(--accent2), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.live-label { font-size: 12px; color: var(--fg3); margin-top: 2px; }
+.live-timer { font-size: 18px; color: var(--fg2); margin-top: 12px; font-family: var(--mono); font-weight: 700; }
+.live-bar {
+  width: 200px; height: 3px; background: var(--bg3); border-radius: 99px; margin: 16px auto 0; overflow: hidden;
+}
+.live-bar-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--cyan));
+  border-radius: 99px; animation: progress-slide 1.5s infinite;
+}
+@keyframes progress-slide { 0% { width: 0; margin-left: 0; } 50% { width: 60%; margin-left: 20%; } 100% { width: 0; margin-left: 100%; } }
 
-  /* ─── Score Display ─── */
-  .score-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-  .score-circle {
-    width: 80px; height: 80px; position: relative; flex-shrink: 0;
-  }
-  .score-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-  .score-circle .bg { fill: none; stroke: var(--bg3); stroke-width: 6; }
-  .score-circle .fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray 1s; }
-  .score-value {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 22px; font-weight: 800;
-  }
-  .score-meta h2 { font-size: 15px; font-weight: 600; }
-  .score-meta .grade { font-size: 13px; }
-  .score-meta .stats { font-size: 11px; color: var(--fg3); margin-top: 2px; }
+.live-feed { max-width: 420px; margin: 20px auto 0; text-align: left; }
+.live-req {
+  display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 4px;
+  font-size: 11px; font-family: var(--mono); color: var(--fg3);
+  animation: req-in 0.3s ease; margin-bottom: 2px;
+}
+@keyframes req-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+.live-req .m { color: var(--accent2); font-weight: 700; width: 32px; }
+.live-req .u { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-req .t { color: var(--orange); font-size: 10px; }
 
-  /* ─── Category Bars ─── */
-  .cats { margin-bottom: 16px; }
-  .cat-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
-  .cat-label { width: 90px; font-size: 12px; color: var(--fg2); }
-  .cat-track { flex: 1; height: 6px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
-  .cat-fill { height: 100%; border-radius: 99px; transition: width 0.8s; }
-  .cat-score { width: 30px; text-align: right; font-size: 12px; font-weight: 700; }
+/* ═══════════ SCORE SECTION ═══════════ */
+.score-row { display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start; }
 
-  /* ─── Violation List ─── */
-  .section-title { font-size: 13px; font-weight: 700; color: var(--fg2); padding: 8px 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
-  .violation {
-    padding: 8px; margin-bottom: 6px; border-radius: 6px; background: var(--bg2);
-    border: 1px solid var(--border); cursor: pointer; transition: all 0.15s;
-  }
-  .violation:hover { border-color: var(--accent); }
-  .violation.expanded .v-body { display: block; }
-  .v-header { display: flex; align-items: center; gap: 8px; }
-  .v-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .v-dot.critical { background: var(--red); }
-  .v-dot.warning { background: var(--orange); }
-  .v-dot.info { background: var(--blue); }
-  .v-title { font-size: 12px; font-weight: 600; flex: 1; }
-  .v-badge { font-size: 10px; padding: 1px 6px; border-radius: 99px; }
-  .v-badge.critical { background: rgba(243,139,168,0.15); color: var(--red); }
-  .v-badge.warning { background: rgba(250,179,135,0.15); color: var(--orange); }
-  .v-badge.info { background: rgba(137,180,250,0.15); color: var(--blue); }
-  .v-body { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
-  .v-desc { font-size: 11px; color: var(--fg3); margin-bottom: 6px; line-height: 1.5; }
-  .v-impact { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .v-tag { font-size: 10px; padding: 2px 8px; border-radius: 99px; background: var(--bg3); color: var(--fg2); }
-  .v-code { background: #11111b; border-radius: 4px; padding: 8px; overflow-x: auto; position: relative; }
-  .v-code pre { font-size: 11px; color: var(--fg); font-family: var(--mono); line-height: 1.5; white-space: pre-wrap; }
-  .v-code .copy-btn {
-    position: absolute; top: 4px; right: 4px; background: var(--bg3); border: none;
-    color: var(--fg3); padding: 2px 8px; border-radius: 4px; font-size: 10px; cursor: pointer;
-  }
-  .v-code .copy-btn:hover { color: var(--fg); }
+.score-gauge { position: relative; width: 96px; height: 96px; flex-shrink: 0; }
+.score-gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.score-gauge .track { fill: none; stroke: var(--bg3); stroke-width: 7; }
+.score-gauge .value { fill: none; stroke-width: 7; stroke-linecap: round; transition: stroke-dasharray 1.2s ease; }
+.score-gauge .num {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.score-gauge .num .n { font-size: 26px; font-weight: 900; letter-spacing: -1px; }
+.score-gauge .num .g { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+
+.score-details { flex: 1; }
+.score-details h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.stat-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 10px; text-align: center;
+}
+.stat-card .num { font-size: 18px; font-weight: 900; }
+.stat-card .label { font-size: 9px; color: var(--fg3); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+.stat-card.red .num { color: var(--red); }
+.stat-card.orange .num { color: var(--orange); }
+.stat-card.blue .num { color: var(--blue); }
+
+/* ═══════════ CATEGORY BARS ═══════════ */
+.cat-section { margin-bottom: 16px; }
+.cat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.cat-icon { width: 18px; text-align: center; font-size: 12px; }
+.cat-name { width: 70px; font-size: 11px; color: var(--fg2); font-weight: 600; }
+.cat-track { flex: 1; height: 6px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+.cat-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+.cat-pct { width: 36px; text-align: right; font-size: 11px; font-weight: 800; font-family: var(--mono); }
+
+/* ═══════════ VIOLATIONS ═══════════ */
+.v-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 6px; transition: all var(--transition); overflow: hidden;
+}
+.v-card:hover { border-color: rgba(124,106,252,0.3); }
+.v-card.expanded { border-color: var(--accent); }
+.v-card.expanded .v-expand { display: block; }
+.v-head {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer;
+  user-select: none;
+}
+.v-sev {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 0 6px currentColor;
+}
+.v-sev.critical { background: var(--red); color: var(--red); }
+.v-sev.warning { background: var(--orange); color: var(--orange); }
+.v-sev.info { background: var(--blue); color: var(--blue); }
+.v-rule { font-size: 10px; font-weight: 800; font-family: var(--mono); color: var(--fg3); width: 22px; }
+.v-title { flex: 1; font-size: 11px; font-weight: 600; }
+.v-pills { display: flex; gap: 4px; }
+.v-pill {
+  font-size: 9px; padding: 1px 6px; border-radius: 99px; font-weight: 700;
+  background: var(--bg4); color: var(--fg3);
+}
+.v-pill.time { background: rgba(91,168,245,0.1); color: var(--blue); }
+.v-pill.reqs { background: rgba(61,214,140,0.1); color: var(--green); }
+.v-pill.bw { background: rgba(240,168,74,0.1); color: var(--orange); }
+
+.v-expand { display: none; padding: 0 10px 10px; }
+.v-desc { font-size: 11px; color: var(--fg3); line-height: 1.6; margin-bottom: 8px; }
+
+.v-fix {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+}
+.v-fix-head {
+  display: flex; align-items: center; padding: 4px 8px;
+  background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+  font-size: 10px; color: var(--fg3);
+}
+.v-fix-head .lang { font-family: var(--mono); }
+.v-fix-head .copy-btn {
+  margin-left: auto; background: none; border: 1px solid var(--border); color: var(--fg3);
+  padding: 1px 8px; border-radius: 4px; font-size: 9px; cursor: pointer; font-family: var(--font);
+}
+.v-fix-head .copy-btn:hover { color: var(--fg); }
+.v-fix pre {
+  padding: 8px; font-size: 11px; font-family: var(--mono); line-height: 1.6;
+  color: var(--fg2); overflow-x: auto; white-space: pre;
+}
+.v-fix .kw { color: #c792ea; }
+.v-fix .fn { color: #82aaff; }
+.v-fix .str { color: #c3e88d; }
+.v-fix .cm { color: #546e7a; font-style: italic; }
+
+/* ═══════════ REQUEST LIST ═══════════ */
+.req-table { width: 100%; border-collapse: collapse; }
+.req-table th {
+  text-align: left; padding: 4px 8px; font-size: 10px; color: var(--fg3);
+  text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border);
+  font-weight: 700; position: sticky; top: 0; background: var(--bg); z-index: 1;
+}
+.req-table td {
+  padding: 3px 8px; font-size: 11px; font-family: var(--mono); border-bottom: 1px solid var(--border);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px;
+}
+.req-table tr:hover td { background: var(--bg2); }
+.req-table .method { color: var(--accent2); font-weight: 700; }
+.req-table .status-ok { color: var(--green); }
+.req-table .status-err { color: var(--red); }
+.req-table .dur { color: var(--orange); }
+.req-table .type-tag {
+  font-size: 9px; padding: 1px 5px; border-radius: 3px;
+  background: var(--bg4); color: var(--fg3); font-family: var(--font);
+}
+
+/* ═══════════ WATERFALL VIZ ═══════════ */
+.wf-container { margin-top: 8px; }
+.wf-bar-row { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; height: 18px; }
+.wf-label { width: 120px; font-size: 10px; font-family: var(--mono); color: var(--fg3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+.wf-track { flex: 1; height: 10px; position: relative; background: rgba(255,255,255,0.02); border-radius: 2px; }
+.wf-seg {
+  position: absolute; height: 100%; border-radius: 2px; min-width: 3px;
+  transition: all 0.4s ease;
+}
+.wf-seg.api { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.wf-seg.static { background: var(--bg4); }
+.wf-time { width: 50px; font-size: 10px; font-family: var(--mono); color: var(--fg3); }
+
+/* ═══════════ IMPACT BANNER ═══════════ */
+.impact {
+  display: flex; gap: 12px; padding: 10px 12px; border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(124,106,252,0.08), rgba(64,217,217,0.06));
+  border: 1px solid rgba(124,106,252,0.15); margin-bottom: 16px;
+}
+.impact-item { text-align: center; flex: 1; }
+.impact-item .val { font-size: 16px; font-weight: 900; }
+.impact-item .lbl { font-size: 9px; color: var(--fg3); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ═══════════ EMPTY STATE ═══════════ */
+.empty-state {
+  text-align: center; padding: 32px; color: var(--fg3);
+}
+.empty-state .icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
+.empty-state p { font-size: 12px; }
 </style>
 </head>
 <body>
 <div class="panel">
+
   <!-- Header -->
   <div class="header">
     <div class="logo">
-      <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
-        <rect width="32" height="32" rx="8" fill="currentColor"/>
-        <path d="M8 10h16M8 16h12M8 22h8" stroke="#1e1e2e" stroke-width="2.5" stroke-linecap="round"/>
-      </svg>
+      <div class="icon">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M3 4h10M3 8h7M3 12h4" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
       FluxAPI
     </div>
-    <button id="scanBtn" class="scan-btn start" onclick="toggleScan()">▶ Start Scan</button>
-    <div id="status" class="status"></div>
-    <div class="header-actions">
-      <select id="networkSelect" class="network-select">
+    <button id="scanBtn" class="scan-btn start">▶ SCAN</button>
+    <span id="status" class="status"></span>
+    <div class="header-right">
+      <select id="netSel" class="net-select">
         <option value="wifi">WiFi</option>
         <option value="jio-4g">Jio 4G</option>
         <option value="airtel-4g">Airtel 4G</option>
@@ -149,439 +313,49 @@
         <option value="slow-3g">Slow 3G</option>
         <option value="bsnl-2g">BSNL 2G</option>
       </select>
-      <button id="exportBtn" class="icon-btn" onclick="exportReport()" style="display:none">📄 Export</button>
-      <button id="clearBtn" class="icon-btn" onclick="clearAll()" style="display:none">🗑️ Clear</button>
+      <button id="exportHtmlBtn" class="h-btn" style="display:none">📄 HTML</button>
+      <button id="exportJsonBtn" class="h-btn" style="display:none">{ } JSON</button>
+      <button id="clearBtn" class="h-btn" style="display:none">Clear</button>
     </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabBar" style="display:none">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="violations">Issues <span class="badge" id="vBadge" style="display:none">0</span></button>
+    <button class="tab" data-tab="requests">Requests <span class="badge" id="rBadge">0</span></button>
+    <button class="tab" data-tab="waterfall">Timeline</button>
   </div>
 
   <!-- Content -->
-  <div class="content" id="content">
-    <div class="idle-state" id="idleView">
-      <div class="big-icon">⚡</div>
-      <h2>Ready to scan</h2>
-      <p>Click "Start Scan" and browse your app. FluxAPI will capture all API requests and analyze them for anti-patterns.</p>
+  <div class="content">
+    <!-- Idle -->
+    <div class="tab-panel active" id="idlePanel">
+      <div class="idle">
+        <div class="glow">⚡</div>
+        <h2>Ready to scan</h2>
+        <p>Click <code>▶ SCAN</code>, then browse your app normally. Reload the page after starting for best results.</p>
+        <p style="margin-top:4px">FluxAPI captures API traffic and detects waterfalls, duplicate requests, N+1 patterns, and missing cache headers.</p>
+      </div>
     </div>
+
+    <!-- Live -->
+    <div class="tab-panel" id="livePanel"></div>
+
+    <!-- Overview -->
+    <div class="tab-panel" id="overviewPanel"></div>
+
+    <!-- Violations -->
+    <div class="tab-panel" id="violationsPanel"></div>
+
+    <!-- Requests -->
+    <div class="tab-panel" id="requestsPanel"></div>
+
+    <!-- Waterfall -->
+    <div class="tab-panel" id="waterfallPanel"></div>
   </div>
 </div>
 
-<script>
-// ═══════════════════════════════════════════════════════════════
-// Panel Logic
-// ═══════════════════════════════════════════════════════════════
-
-let scanning = false;
-let scanStart = 0;
-let requestCount = 0;
-let timer = null;
-let currentReport = null;
-const tabId = chrome.devtools.inspectedWindow.tabId;
-
-function toggleScan() {
-  if (scanning) stopScan();
-  else startScan();
-}
-
-function startScan() {
-  scanning = true;
-  scanStart = Date.now();
-  requestCount = 0;
-
-  const btn = document.getElementById('scanBtn');
-  btn.className = 'scan-btn stop';
-  btn.textContent = '■ Stop Scan';
-
-  document.getElementById('exportBtn').style.display = 'none';
-  document.getElementById('clearBtn').style.display = 'none';
-
-  // Tell background to start
-  chrome.runtime.sendMessage({
-    type: 'FLUX_START_SCAN',
-    tabId,
-    config: { network: document.getElementById('networkSelect').value },
-  });
-
-  // Tell content script to inject interceptors
-  chrome.tabs.sendMessage(tabId, { type: 'FLUX_INJECT_START' });
-
-  // Show live view
-  showLiveView();
-
-  // Also listen to DevTools network for requests
-  chrome.devtools.network.onRequestFinished.addListener(onDevToolsRequest);
-}
-
-function stopScan() {
-  scanning = false;
-  const elapsed = Math.round((Date.now() - scanStart) / 1000);
-
-  const btn = document.getElementById('scanBtn');
-  btn.className = 'scan-btn analyzing';
-  btn.textContent = '⏳ Analyzing...';
-
-  // Stop capturing
-  chrome.runtime.sendMessage({ type: 'FLUX_STOP_SCAN', tabId });
-  chrome.tabs.sendMessage(tabId, { type: 'FLUX_INJECT_STOP' });
-  chrome.devtools.network.onRequestFinished.removeListener(onDevToolsRequest);
-
-  if (timer) { clearInterval(timer); timer = null; }
-
-  document.getElementById('status').textContent = `Captured ${requestCount} requests in ${elapsed}s`;
-
-  // Get session and analyze
-  chrome.runtime.sendMessage({ type: 'FLUX_GET_SESSION', tabId }, (response) => {
-    if (response?.ok) {
-      analyzeSession(response.session);
-    } else {
-      showError('Failed to retrieve scan data');
-    }
-  });
-}
-
-function onDevToolsRequest(har) {
-  if (!scanning) return;
-  requestCount++;
-
-  // Build a request record from HAR entry
-  const entry = har;
-  const req = {
-    url: entry.request.url,
-    method: entry.request.method,
-    startTime: new Date(entry.startedDateTime).getTime(),
-    endTime: new Date(entry.startedDateTime).getTime() + entry.time,
-    status: entry.response.status,
-    responseHeaders: {},
-    responseSize: entry.response.content?.size || 0,
-    contentType: entry.response.content?.mimeType || null,
-    source: 'har',
-  };
-
-  entry.response.headers.forEach(h => {
-    req.responseHeaders[h.name.toLowerCase()] = h.value;
-  });
-
-  chrome.runtime.sendMessage({
-    type: 'FLUX_REQUEST_CAPTURED',
-    tabId,
-    request: buildHarRecord(req, requestCount),
-  });
-}
-
-function buildHarRecord(raw, seq) {
-  return {
-    id: `har_${seq}`,
-    url: raw.url,
-    method: raw.method || 'GET',
-    urlParts: parseUrlSimple(raw.url),
-    headers: {},
-    bodySize: 0,
-    bodyHash: null,
-    startTime: raw.startTime,
-    ttfb: raw.startTime + 20,
-    endTime: raw.endTime,
-    duration: raw.endTime - raw.startTime,
-    response: {
-      status: raw.status,
-      statusText: '',
-      headers: raw.responseHeaders || {},
-      bodySize: raw.responseSize || 0,
-      contentType: raw.contentType,
-      cacheHeaders: {
-        cacheControl: raw.responseHeaders?.['cache-control'] || null,
-        etag: raw.responseHeaders?.['etag'] || null,
-        lastModified: raw.responseHeaders?.['last-modified'] || null,
-        expires: null, age: null, acceptEncoding: false, contentEncoding: null,
-      },
-      bodyHash: `har_${seq}`,
-      jsonFieldCount: null,
-      fromCache: false,
-    },
-    initiator: { stackTrace: [], componentName: null, componentFile: null, rawStack: '' },
-    navigationContext: { currentRoute: new URL(raw.url).pathname, previousRoute: null, timeSinceNavigation: 0, pageState: 'complete' },
-    type: classifyUrl(raw.url, raw.method),
-    source: 'har',
-    error: null,
-    sequence: seq,
-  };
-}
-
-async function analyzeSession(session) {
-  // Import the analyzer (bundled with extension)
-  // For now, we'll use a simplified inline analysis
-  // In production, this would import @fluxapi/scan
-
-  try {
-    const report = inlineAnalyze(session);
-    currentReport = report;
-    showResults(report);
-  } catch (err) {
-    showError('Analysis failed: ' + err.message);
-  }
-
-  const btn = document.getElementById('scanBtn');
-  btn.className = 'scan-btn start';
-  btn.textContent = '▶ Rescan';
-
-  document.getElementById('exportBtn').style.display = '';
-  document.getElementById('clearBtn').style.display = '';
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Inline Analyzer (simplified — production uses @fluxapi/scan)
-// ═══════════════════════════════════════════════════════════════
-
-function inlineAnalyze(session) {
-  const requests = session.requests || [];
-  const apiReqs = requests.filter(r => r.type === 'api-rest' || r.type === 'api-graphql');
-
-  const violations = [];
-  let score = 100;
-
-  // E2: Duplicate detection
-  const sigGroups = {};
-  apiReqs.forEach(r => {
-    const sig = `${r.method}|${r.urlParts?.pathPattern || r.url}`;
-    (sigGroups[sig] = sigGroups[sig] || []).push(r);
-  });
-  for (const [sig, reqs] of Object.entries(sigGroups)) {
-    if (reqs.length >= 2) {
-      const window = 2000;
-      const sorted = reqs.sort((a,b) => a.startTime - b.startTime);
-      let cluster = [sorted[0]];
-      for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i].startTime - cluster[0].startTime <= window) {
-          cluster.push(sorted[i]);
-        } else {
-          if (cluster.length >= 2) {
-            violations.push({
-              ruleId: 'E2', severity: 'critical',
-              title: `${sig.split('|')[1]} called ${cluster.length}x`,
-              description: `Duplicate requests detected within ${window}ms`,
-              impact: { requestsEliminated: cluster.length - 1, timeSavedMs: (cluster.length - 1) * 150 },
-            });
-            score -= Math.min(15, cluster.length * 3);
-          }
-          cluster = [sorted[i]];
-        }
-      }
-      if (cluster.length >= 2) {
-        violations.push({
-          ruleId: 'E2', severity: 'critical',
-          title: `${sig.split('|')[1]} called ${cluster.length}x`,
-          description: `Duplicate requests detected within ${window}ms`,
-          impact: { requestsEliminated: cluster.length - 1, timeSavedMs: (cluster.length - 1) * 150 },
-        });
-        score -= Math.min(15, cluster.length * 3);
-      }
-    }
-  }
-
-  // C1: Uncached detection
-  const endpointGroups = {};
-  apiReqs.filter(r => r.method === 'GET' && r.response).forEach(r => {
-    const key = r.urlParts?.pathPattern || r.url;
-    (endpointGroups[key] = endpointGroups[key] || []).push(r);
-  });
-  for (const [ep, reqs] of Object.entries(endpointGroups)) {
-    if (reqs.length >= 2) {
-      const allUncached = reqs.every(r => {
-        const ch = r.response?.cacheHeaders;
-        return !ch?.cacheControl && !ch?.etag && !ch?.lastModified;
-      });
-      if (allUncached) {
-        violations.push({
-          ruleId: 'C1', severity: 'critical',
-          title: `No cache: ${ep} (${reqs.length}x)`,
-          description: `No Cache-Control, ETag, or Last-Modified headers`,
-          impact: { requestsEliminated: reqs.length - 1, bandwidthSavedBytes: reqs.reduce((s,r) => s + (r.response?.bodySize || 0), 0) },
-        });
-        score -= Math.min(12, reqs.length * 2);
-      }
-    }
-  }
-
-  // E3: N+1 detection
-  const patternGroups = {};
-  apiReqs.forEach(r => {
-    const p = r.urlParts?.pathPattern || '';
-    if (p.includes(':id') || p.includes(':uuid') || p.includes(':objectId')) {
-      const key = `${r.method}|${p}`;
-      (patternGroups[key] = patternGroups[key] || []).push(r);
-    }
-  });
-  for (const [key, reqs] of Object.entries(patternGroups)) {
-    if (reqs.length >= 5) {
-      const pattern = key.split('|')[1];
-      violations.push({
-        ruleId: 'E3', severity: 'critical',
-        title: `N+1: ${reqs.length} individual ${pattern} requests`,
-        description: `Could be batched into a single request`,
-        impact: { requestsEliminated: reqs.length - 1, timeSavedMs: reqs.reduce((s,r) => s + r.duration, 0) * 0.8 },
-      });
-      score -= Math.min(12, reqs.length);
-    }
-  }
-
-  score = Math.max(0, Math.min(100, Math.round(score)));
-  const grade = score >= 90 ? 'excellent' : score >= 70 ? 'good' : score >= 50 ? 'needs-work' : 'poor';
-
-  return {
-    score: { overall: score, grade },
-    violations,
-    session,
-    summary: {
-      criticalCount: violations.filter(v => v.severity === 'critical').length,
-      warningCount: violations.filter(v => v.severity === 'warning').length,
-      infoCount: violations.filter(v => v.severity === 'info').length,
-      totalViolations: violations.length,
-    },
-  };
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Views
-// ═══════════════════════════════════════════════════════════════
-
-function showLiveView() {
-  const content = document.getElementById('content');
-  content.innerHTML = `
-    <div class="live-view">
-      <div class="live-count pulse" id="liveCount">0</div>
-      <div class="live-label">API requests captured</div>
-      <div class="live-timer" id="liveTimer">00:00</div>
-    </div>
-  `;
-
-  timer = setInterval(() => {
-    const elapsed = Math.round((Date.now() - scanStart) / 1000);
-    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
-    const s = String(elapsed % 60).padStart(2, '0');
-    const el = document.getElementById('liveTimer');
-    if (el) el.textContent = `${m}:${s}`;
-    const countEl = document.getElementById('liveCount');
-    if (countEl) countEl.textContent = requestCount;
-  }, 200);
-}
-
-function showResults(report) {
-  const { score, violations, summary } = report;
-  const color = score.overall >= 90 ? 'var(--green)' : score.overall >= 70 ? 'var(--blue)' : score.overall >= 50 ? 'var(--orange)' : 'var(--red)';
-  const dashLen = (score.overall / 100) * 207;
-
-  let html = `
-    <div class="score-header">
-      <div class="score-circle">
-        <svg viewBox="0 0 80 80">
-          <circle class="bg" cx="40" cy="40" r="33"/>
-          <circle class="fill" cx="40" cy="40" r="33" stroke-dasharray="${dashLen} 207" style="stroke:${color}"/>
-        </svg>
-        <div class="score-value" style="color:${color}">${score.overall}</div>
-      </div>
-      <div class="score-meta">
-        <h2>API Health Score</h2>
-        <div class="grade" style="color:${color}">${capitalize(score.grade)}</div>
-        <div class="stats">
-          🔴 ${summary.criticalCount} critical · 🟡 ${summary.warningCount} warnings · ℹ️ ${summary.infoCount} info
-        </div>
-      </div>
-    </div>
-  `;
-
-  if (violations.length > 0) {
-    html += `<div class="section-title">Issues Found (${violations.length})</div>`;
-    violations.forEach((v, i) => {
-      html += `
-        <div class="violation" onclick="this.classList.toggle('expanded')">
-          <div class="v-header">
-            <div class="v-dot ${v.severity}"></div>
-            <div class="v-title">[${v.ruleId}] ${escHtml(v.title)}</div>
-            <span class="v-badge ${v.severity}">${v.severity}</span>
-          </div>
-          <div class="v-body">
-            <div class="v-desc">${escHtml(v.description)}</div>
-            <div class="v-impact">
-              ${v.impact?.timeSavedMs > 0 ? `<span class="v-tag">⚡ ${Math.round(v.impact.timeSavedMs)}ms faster</span>` : ''}
-              ${v.impact?.requestsEliminated > 0 ? `<span class="v-tag">📉 ${v.impact.requestsEliminated} fewer</span>` : ''}
-              ${v.impact?.bandwidthSavedBytes > 0 ? `<span class="v-tag">💾 ${Math.round(v.impact.bandwidthSavedBytes / 1024)}KB</span>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    });
-  } else {
-    html += `<div style="text-align:center;color:var(--green);padding:24px">✨ No issues found!</div>`;
-  }
-
-  document.getElementById('content').innerHTML = html;
-}
-
-function showError(msg) {
-  document.getElementById('content').innerHTML = `
-    <div style="text-align:center;color:var(--red);padding:40px">
-      <div style="font-size:32px;margin-bottom:8px">❌</div>
-      <div>${escHtml(msg)}</div>
-    </div>
-  `;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Actions
-// ═══════════════════════════════════════════════════════════════
-
-function exportReport() {
-  if (!currentReport) return;
-  const json = JSON.stringify(currentReport, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `fluxapi-report-${Date.now()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function clearAll() {
-  currentReport = null;
-  requestCount = 0;
-  chrome.runtime.sendMessage({ type: 'FLUX_CLEAR', tabId });
-  document.getElementById('content').innerHTML = `
-    <div class="idle-state">
-      <div class="big-icon">⚡</div>
-      <h2>Ready to scan</h2>
-      <p>Click "Start Scan" and browse your app.</p>
-    </div>
-  `;
-  document.getElementById('exportBtn').style.display = 'none';
-  document.getElementById('clearBtn').style.display = 'none';
-  document.getElementById('status').textContent = '';
-}
-
-// ═══════════════════════════════════════════════════════════════
-// Helpers
-// ═══════════════════════════════════════════════════════════════
-
-function parseUrlSimple(rawUrl) {
-  try {
-    const u = new URL(rawUrl);
-    const segments = u.pathname.split('/').filter(Boolean);
-    const pattern = '/' + segments.map(s => {
-      if (/^\d+$/.test(s)) return ':id';
-      if (/^[0-9a-f]{8}-/.test(s)) return ':uuid';
-      return s;
-    }).join('/');
-    return { host: u.host, pathPattern: pattern, pathname: u.pathname };
-  } catch { return { host: '', pathPattern: rawUrl, pathname: rawUrl }; }
-}
-
-function classifyUrl(url, method) {
-  const l = url.toLowerCase();
-  if (l.includes('/graphql')) return 'api-graphql';
-  if (/\.(js|css|png|jpg|svg|ico|woff)/.test(l)) return 'static';
-  if (l.includes('/api/') || (method && method !== 'GET')) return 'api-rest';
-  return 'other';
-}
-
-function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-</script>
+<script src="panel.js"></script>
 </body>
 </html>

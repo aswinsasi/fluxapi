@@ -183,7 +183,7 @@ async function liveScan(url: string, args: CliArgs): Promise<any> {
 
   const browser = await puppeteer.default.launch({
     headless: args.headless ? 'new' : false,
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized'],
   });
 
   const page = await browser.newPage();
