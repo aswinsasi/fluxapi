@@ -230,6 +230,7 @@ footer a{color:var(--fg3)}
   <div class="nav-links">
     <a href="#features">Features</a>
     <a href="#how-it-works">How it Works</a>
+    <a href="#use-cases">Use Cases</a>
     <a href="#scoring">Scoring</a>
     <a href="https://github.com/aswinsasi/fluxapi">GitHub</a>
   </div>
@@ -411,21 +412,93 @@ footer a{color:var(--fg3)}
         <button class="code-copy" onclick="this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500);navigator.clipboard.writeText('npx flux-scan https://your-app.com -o report.html')">Copy</button>
       </div>
       <div class="code-body">
-<pre><span class="cm"># Scan any URL and get an HTML report</span>
+<pre><span class="cm"># Quick scan with HTML report</span>
 <span class="prompt">$</span> npx flux-scan https://your-app.com -o report.html
 
-<span class="cm"># Score for Indian mobile networks</span>
-<span class="prompt">$</span> npx flux-scan https://your-app.com --network jio-4g
+<span class="cm"># Test with Indian mobile network scoring</span>
+<span class="prompt">$</span> npx flux-scan https://your-app.com --network jio-4g -o report.html
 
-<span class="cm"># In CI/CD (fails build if score &lt; 70)</span>
-<span class="prompt">$</span> npx flux-scan https://staging.your-app.com --threshold 70
+<span class="cm"># Authenticated apps — login manually, browse, press Enter</span>
+<span class="prompt">$</span> npx flux-scan https://admin.your-app.com --no-headless --interact
 
-<span class="cm"># Or use the GitHub Action</span>
-- <span class="kw">uses</span>: fluxapi/scan-action@v1
-  <span class="kw">with</span>:
-    <span class="fn">url</span>: <span class="str">https://staging.your-app.com</span>
-    <span class="fn">threshold</span>: <span class="num">70</span>
-    <span class="fn">network</span>: <span class="str">jio-4g</span></pre>
+<span class="cm"># Longer scan with visible browser</span>
+<span class="prompt">$</span> npx flux-scan https://your-app.com --no-headless -d 60
+
+<span class="cm"># Analyze a saved session file</span>
+<span class="prompt">$</span> npx flux-scan --session scan-data.json -o report.html
+
+<span class="cm"># JSON output for CI/CD pipelines (exit code 1 if score &lt; 50)</span>
+<span class="prompt">$</span> npx flux-scan https://staging.your-app.com -f json
+
+<span class="cm"># Stress test on slow networks</span>
+<span class="prompt">$</span> npx flux-scan https://your-app.com -n bsnl-2g -o slow-report.html</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Use Cases -->
+<section class="section" id="use-cases">
+  <h2 class="section-title fade-in">Use cases</h2>
+  <p class="section-sub fade-in">FluxAPI fits into every stage of your development workflow</p>
+
+  <div class="grid">
+    <div class="card fade-in">
+      <div class="card-icon">🚀</div>
+      <div class="card-title">Pre-Deploy Audit</div>
+      <div class="card-desc">Run before every deploy to catch API regressions. Generate an HTML report and share with your team.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://staging.app.com -o report.html</code></div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🔒</div>
+      <div class="card-title">Authenticated App Scanning</div>
+      <div class="card-desc">Admin panels, dashboards, apps behind login — open a visible browser, login manually, browse all pages, press Enter.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://admin.app.com --no-headless --interact</code></div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🇮🇳</div>
+      <div class="card-title">India Market Optimization</div>
+      <div class="card-desc">Your app works on WiFi but crashes on Jio 4G. Score your APIs against real Indian network conditions.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://app.com -n jio-4g -o jio.html</code></div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">⚙️</div>
+      <div class="card-title">CI/CD Quality Gate</div>
+      <div class="card-desc">Fail the build automatically if API health drops below 50. Exit code 1 on poor scores — works with any CI system.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://staging.app.com -f json</code></div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Before/After Comparison</div>
+      <div class="card-desc">Scan before your optimization, apply fixes, scan again. Compare the two HTML reports to prove your improvement.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://app.com -o before.html</code></div>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🔍</div>
+      <div class="card-title">Chrome DevTools Extension</div>
+      <div class="card-desc">Real-time scanning inside DevTools. Best for daily development — you're already logged in, no setup needed. Export as HTML or JSON.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CLI Reference -->
+<section class="section" id="cli-ref" style="background:var(--bg2)">
+  <h2 class="section-title fade-in">CLI Reference</h2>
+  <p class="section-sub fade-in">Every option at a glance</p>
+
+  <div class="code-section fade-in">
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">options</span></div>
+      <div class="code-body">
+<pre><span class="fn">-d, --duration</span> <span class="str">&lt;sec&gt;</span>     Scan duration in seconds <span class="cm">(default: 30)</span>
+<span class="fn">-n, --network</span> <span class="str">&lt;name&gt;</span>    wifi | jio-4g | airtel-4g | airtel-3g | bsnl-2g | slow-3g
+<span class="fn">-o, --output</span> <span class="str">&lt;file&gt;</span>     Output file <span class="cm">(.html or .json)</span>
+<span class="fn">-f, --format</span> <span class="str">&lt;fmt&gt;</span>      console | html | json
+<span class="fn">-s, --session</span> <span class="str">&lt;file&gt;</span>    Analyze saved session JSON <span class="cm">(skip live scan)</span>
+<span class="fn">    --no-headless</span>       Show browser window during scan
+<span class="fn">    --interact</span>          Manual browse mode <span class="cm">(press Enter to stop)</span>
+<span class="fn">-h, --help</span>              Show help
+<span class="fn">-v, --version</span>           Show version
+
+<span class="cm">EXIT CODES</span>
+  <span class="num">0</span>  Score &gt;= 50 <span class="cm">(pass)</span>
+  <span class="num">1</span>  Score &lt; 50  <span class="cm">(fail — useful for CI/CD)</span>
+  <span class="num">2</span>  Fatal error</pre>
       </div>
     </div>
   </div>

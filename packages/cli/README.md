@@ -6,27 +6,36 @@ CLI for [FluxAPI](https://github.com/aswinsasi/fluxapi) — scan any URL for API
 npx flux-scan https://myapp.com -o report.html
 ```
 
-## Usage
+## Examples
 
 ```bash
-# Basic scan
+# Quick scan (headless, 30s, console output)
 npx flux-scan https://myapp.com
 
-# Jio 4G network scoring + HTML report
-npx flux-scan https://myapp.com --network jio-4g -o report.html
+# Full report with Jio 4G scoring
+npx flux-scan https://myapp.com -n jio-4g -o report.html
 
-# Analyze a saved session
-npx flux-scan --session scan-data.json -o report.json
+# Authenticated apps (login manually, browse, press Enter)
+npx flux-scan https://myapp.com --no-headless --interact
 
-# Show browser window during scan
-npx flux-scan https://myapp.com --no-headless
+# Longer scan with visible browser
+npx flux-scan https://myapp.com --no-headless -d 60
+
+# Analyze a saved session file
+npx flux-scan --session scan-data.json -o report.html
+
+# JSON output for CI/CD
+npx flux-scan https://staging.myapp.com -f json
+
+# Slow network stress test
+npx flux-scan https://myapp.com -n bsnl-2g -o slow-report.html
 ```
 
 ## Options
 
 ```
 -d, --duration <sec>    Scan duration (default: 30)
--n, --network <profile> Network profile: wifi | jio-4g | airtel-3g | bsnl-2g
+-n, --network <profile> Network: wifi | jio-4g | airtel-4g | airtel-3g | bsnl-2g | slow-3g
 -o, --output <file>     Output file (.html or .json)
 -f, --format <fmt>      console | html | json
 -s, --session <file>    Analyze saved session JSON
@@ -35,16 +44,21 @@ npx flux-scan https://myapp.com --no-headless
 -h, --help              Show help
 ```
 
+## Use Cases
+
+| Scenario | Command |
+|----------|---------|
+| Public site audit | `npx flux-scan https://myapp.com -o report.html` |
+| Auth site (manual login) | `npx flux-scan https://myapp.com --no-headless --interact` |
+| CI/CD gate | `npx flux-scan https://staging.app.com -f json` |
+| India network test | `npx flux-scan https://myapp.com -n jio-4g -o jio.html` |
+| Compare networks | Run twice: `-n wifi` vs `-n bsnl-2g` |
+
 ## Exit codes
 
-- `0` — Score >= 50
-- `1` — Score < 50 (useful for CI/CD)
+- `0` — Score >= 50 (pass)
+- `1` — Score < 50 (fail — useful for CI/CD)
 - `2` — Fatal error
-
-## Requirements
-
-- Node.js >= 18
-- Puppeteer (installed automatically as optional dependency)
 
 ## License
 

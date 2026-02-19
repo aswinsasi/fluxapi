@@ -98,10 +98,26 @@ USAGE
   npx flux-scan <url> [options]
 
 EXAMPLES
-  npx flux-scan https://myapp.com
-  npx flux-scan https://myapp.com -d 60 -n jio-4g
-  npx flux-scan https://myapp.com -o report.html
-  npx flux-scan --session scan.json -o report.json
+  Quick scan (headless, 30s, console output):
+    npx flux-scan https://myapp.com
+
+  Full report with Jio 4G scoring:
+    npx flux-scan https://myapp.com -n jio-4g -o report.html
+
+  Interactive mode (login, browse, then press Enter):
+    npx flux-scan https://myapp.com --no-headless --interact
+
+  Longer scan with visible browser:
+    npx flux-scan https://myapp.com --no-headless -d 60
+
+  Analyze a saved session file:
+    npx flux-scan --session scan-data.json -o report.html
+
+  JSON output for CI/CD:
+    npx flux-scan https://staging.myapp.com -f json
+
+  Slow network test:
+    npx flux-scan https://myapp.com -n bsnl-2g -o slow-report.html
 
 OPTIONS
   -d, --duration <sec>   Scan duration in seconds (default: 30)
@@ -111,15 +127,34 @@ OPTIONS
   -f, --format <fmt>     Output format: console | html | json
   -s, --session <file>   Analyze saved session JSON (skip live scan)
       --no-headless      Show browser window during scan
-      --interact         Wait for user to browse (press Enter to stop)
+      --interact         Manual browse mode (press Enter to stop)
   -h, --help             Show this help
   -v, --version          Show version
+
+USE CASES
+  Public site audit        npx flux-scan https://myapp.com -o report.html
+  Auth site (manual login) npx flux-scan https://myapp.com --no-headless --interact
+  CI/CD gate (fail <50)    npx flux-scan https://staging.app.com -f json
+  India network test       npx flux-scan https://myapp.com -n jio-4g -o jio.html
+  Compare networks         Run twice: -n wifi vs -n bsnl-2g, compare reports
+
+DETECTS
+  E1  Request Waterfalls   Sequential calls that could be parallel
+  E2  Duplicate Requests   Same endpoint hit from multiple components
+  E3  N+1 Pattern          GET /items/1, /items/2 ... x25
+  C1  No Cache Strategy    Missing Cache-Control, ETag, staleTime
+  C2  Under-Caching        Near-identical responses not cached
 
 SCORING
   90-100  🟢 Excellent — API layer is well optimized
   70-89   🔵 Good — Minor improvements possible
   50-69   🟡 Needs Work — Several optimization opportunities
   0-49    🔴 Poor — Significant API anti-patterns detected
+
+EXIT CODES
+  0  Score >= 50 (pass)
+  1  Score < 50  (fail — useful for CI/CD)
+  2  Fatal error
 `;
 
 // ─── Scanner Injection Script ───────────────────────────────────
@@ -187,6 +222,11 @@ async function liveScan(url: string, args: CliArgs): Promise<any> {
   });
 
   const page = await browser.newPage();
+  const { width, height } = await page.evaluate(() => ({
+    width: window.screen.availWidth,
+    height: window.screen.availHeight,
+  }));
+  await page.setViewport({ width, height });
 
   // Intercept and collect network requests ourselves
   const requests: any[] = [];
