@@ -64,6 +64,7 @@ export function generateHtmlReport(
     ${renderScoreSection(report)}
     ${renderCategoryBars(report)}
     ${renderImpactSummary(report)}
+    ${renderWebSocketSummary(report)}
     ${renderAuditSection(report, opts)}
     ${renderFooter(report)}
   </div>
@@ -94,7 +95,7 @@ function renderHeader(report: FluxReport, title: string): string {
         <span class="fx-meta-item">⏱️ ${(meta.scanDuration / 1000).toFixed(1)}s scan</span>
         <span class="fx-meta-item">📡 ${meta.apiRequests} API calls</span>
         <span class="fx-meta-item">🔌 ${meta.uniqueEndpoints} endpoints</span>
-        ${stack.framework ? `<span class="fx-meta-item">⚛️ ${capitalize(stack.framework.name)}${stack.framework.version ? ' ' + stack.framework.version : ''}</span>` : ''}
+        ${stack.framework ? `<span class="fx-meta-item">⚛️ ${capitalize(stack.framework.name)}${stack.framework.version ? ' ' + stack.framework.version : ''}${stack.framework.metaFramework ? ' (' + capitalize(stack.framework.metaFramework) + ')' : ''}</span>` : ''}
         ${stack.dataLibrary && stack.dataLibrary.name !== 'none' ? `<span class="fx-meta-item">📦 ${stack.dataLibrary.name}</span>` : ''}
         ${cfg.network !== 'wifi' ? `<span class="fx-meta-item fx-network-badge">📶 ${cfg.network}</span>` : ''}
       </div>
@@ -210,6 +211,47 @@ function renderImpactSummary(report: FluxReport): string {
           <div class="fx-impact-label">Saved per month</div>
         </div>
         ` : ''}
+      </div>
+    </section>`;
+}
+
+function renderWebSocketSummary(report: FluxReport): string {
+  const ws = report.session.websockets;
+  if (!ws || ws.connections.length === 0) return '';
+
+  const connCards = ws.connections.map(conn => {
+    const url = new URL(conn.url).host || conn.url;
+    const totalMsgs = conn.messagesReceived + conn.messagesSent;
+    return `
+      <div class="fx-impact-card">
+        <div class="fx-impact-icon">🔌</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:4px">${escHtml(url)}</div>
+        <div class="fx-impact-value">${totalMsgs}</div>
+        <div class="fx-impact-label">messages (↓${conn.messagesReceived} ↑${conn.messagesSent})</div>
+        ${conn.channels.length > 0 ? `<div style="font-size:11px;color:var(--fg3);margin-top:4px">${conn.channels.map(c => escHtml(c)).join(', ')}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  return `
+    <section class="fx-impact">
+      <h2 class="fx-section-title">WebSocket Activity</h2>
+      <div class="fx-impact-grid">
+        <div class="fx-impact-card">
+          <div class="fx-impact-icon">📡</div>
+          <div class="fx-impact-value">${ws.connections.length}</div>
+          <div class="fx-impact-label">connections</div>
+        </div>
+        <div class="fx-impact-card">
+          <div class="fx-impact-icon">💬</div>
+          <div class="fx-impact-value">${ws.totalMessages}</div>
+          <div class="fx-impact-label">total messages</div>
+        </div>
+        <div class="fx-impact-card">
+          <div class="fx-impact-icon">⚡</div>
+          <div class="fx-impact-value">${ws.messagesPerSecond}/s</div>
+          <div class="fx-impact-label">message rate</div>
+        </div>
+        ${connCards}
       </div>
     </section>`;
 }

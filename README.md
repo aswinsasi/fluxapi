@@ -1,6 +1,6 @@
 # ⚡ FluxAPI — Lighthouse for Your API Calls
 
-**Scans your React app's network layer. Finds waterfalls, duplicate fetches, N+1 patterns, and missing cache. Generates fix code you can copy-paste.**
+**Scans your web app's network layer. 13 audit rules detect waterfalls, duplicate fetches, N+1 patterns, caching gaps, polling waste, and missing compression. Generates framework-aware fix code you can copy-paste.**
 
 [![npm version](https://img.shields.io/npm/v/@fluxiapi/scan)](https://www.npmjs.com/package/@fluxiapi/scan)
 [![npm version](https://img.shields.io/npm/v/@fluxiapi/cli)](https://www.npmjs.com/package/@fluxiapi/cli)
@@ -14,15 +14,44 @@ npx flux-scan https://your-app.com -o report.html
 
 ## What it Detects
 
+### ⚡ Efficiency Rules
+
 | Rule | What it Catches | Auto-Fix | Severity |
 |------|----------------|----------|----------|
 | **E1** | Request Waterfalls — sequential calls that could run in parallel | `Promise.all` / `useSuspenseQueries` | 🔴 Critical |
 | **E2** | Duplicate Requests — same endpoint called by multiple components | Shared `useQuery` hook | 🔴 Critical |
 | **E3** | N+1 Query Pattern — GET /products/1, /products/2 ×25 | Batch endpoint | 🔴 Critical |
+| **E4** | Payload Over-fetching — API returns 50 fields, app uses 6 | Sparse fieldsets / GraphQL | 🟡 Warning |
+| **E5** | Batchable Requests — 5 calls to same host in tight window | Batch API / DataLoader | 🟡 Warning |
+
+### 💾 Caching Rules
+
+| Rule | What it Catches | Auto-Fix | Severity |
+|------|----------------|----------|----------|
 | **C1** | No Cache Strategy — zero Cache-Control, ETag, or staleTime | `staleTime` + headers | 🔴 Critical |
 | **C2** | Under-Caching — 95% of fetches return identical data | Optimized TTL | 🟡 Warning |
+| **C3** | Over-Caching — cache TTL outlives data freshness | Reduced TTL + `stale-while-revalidate` | 🟡 Warning |
+| **C4** | Missing Revalidation — has ETag but never sends If-None-Match | Conditional requests (304) | 🔵 Info |
 
-Every violation generates **copy-pasteable React + TanStack Query code** to fix it.
+### 🔄 Pattern Rules
+
+| Rule | What it Catches | Auto-Fix | Severity |
+|------|----------------|----------|----------|
+| **P1** | Missing Prefetch — predictable navigations with no prefetch | `prefetchQuery` on likely routes | 🟡 Warning |
+| **P2** | Unnecessary Polling — polling every 2s, data changes every 60s | Increased interval / SSE | 🟡 Warning |
+| **P3** | Missing Error Recovery — 500s with no retry | Exponential backoff retry | 🔵 Info |
+| **P4** | Uncompressed Responses — JSON without gzip/brotli | Server compression config | 🔵 Info |
+
+### 🧠 Intelligence (v0.2.0)
+
+| Feature | What it Does |
+|---------|-------------|
+| **Framework Detection** | Auto-detects React, Next.js, Vue, Nuxt, Remix, SvelteKit, Angular |
+| **GraphQL Dedup** | Parses operations, detects duplicate queries by hash + variables |
+| **WebSocket Monitor** | Tracks WS connections, message rates, channels, subscriptions |
+| **Framework-Aware Fixes** | Generates fix code for TanStack Query, SWR, Apollo, Vue composables, Angular |
+
+Every violation generates **framework-aware fix code** — React, Vue, Angular, SWR, Apollo — that matches your detected stack.
 
 ---
 

@@ -17,6 +17,7 @@ import { startObserving, stopObserving, onEvent as observerOnEvent } from './obs
 import { handleEvent, initLogger, resetLogger, getAllRequests, getApiRequests, getSessionMetadata, getStats } from './logger/request-logger';
 import { startNavigationTracking, stopNavigationTracking, getNavigations, resetNavigation } from './navigation/tracker';
 import { detectFramework, detectDataLibrary } from './stack-trace/capture';
+import { startWebSocketMonitoring, stopWebSocketMonitoring, getWebSocketSummary, resetWebSocketMonitor } from './observer/websocket-monitor';
 
 // ─── Scanner States ─────────────────────────────────────────────
 
@@ -61,6 +62,7 @@ export class FluxScanner {
     resetSequence();
     resetLogger();
     resetNavigation();
+    resetWebSocketMonitor();
 
     // Initialize logger
     initLogger(this._config);
@@ -79,6 +81,9 @@ export class FluxScanner {
 
     // Start navigation tracking
     startNavigationTracking();
+
+    // Start WebSocket monitoring
+    startWebSocketMonitoring();
 
     // Detect stack (do this after a short delay to let the page settle)
     setTimeout(() => {
@@ -122,6 +127,7 @@ export class FluxScanner {
     // Stop components
     stopObserving();
     stopNavigationTracking();
+    stopWebSocketMonitoring();
 
     // Cleanup listeners
     if (this._cleanupEventListener) {
@@ -235,7 +241,7 @@ export class FluxScanner {
 
     return {
       framework: framework
-        ? { name: framework.name as any, version: framework.version }
+        ? { name: framework.name as any, version: framework.version, metaFramework: framework.metaFramework || null }
         : null,
       dataLibrary: dataLibrary
         ? { name: dataLibrary.name as any, version: dataLibrary.version }
@@ -256,6 +262,7 @@ export class FluxScanner {
       endTime: this._endTime,
       requests: getAllRequests(),
       navigations: getNavigations(),
+      websockets: getWebSocketSummary(),
       stack: this._detectedStack || this._detectStack(),
       config: { ...this._config },
       metadata: getSessionMetadata(

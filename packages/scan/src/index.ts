@@ -55,6 +55,10 @@ export type {
   SessionMetadata,
   FluxEvent,
   FluxEventHandler,
+  WebSocketEvent,
+  WebSocketSummary,
+  WebSocketConnection,
+  GraphQLOperation,
 } from './types';
 
 export { DEFAULT_CONFIG, NETWORK_PROFILES } from './types';
@@ -101,6 +105,30 @@ export {
   detectFramework,
   detectDataLibrary,
 } from './stack-trace/capture';
+
+// ─── WebSocket Monitoring (Stage 3) ────────────────────────────
+export {
+  startWebSocketMonitoring,
+  stopWebSocketMonitoring,
+  getWebSocketSummary,
+  resetWebSocketMonitor,
+} from './observer/websocket-monitor';
+
+// ─── GraphQL Dedup (Stage 3) ───────────────────────────────────
+export {
+  parseGraphQLBody,
+  detectGraphQLDuplicates,
+} from './analyzer/graphql-dedup';
+export type { GraphQLDuplicate } from './analyzer/graphql-dedup';
+
+// ─── Framework-Aware Fixes (Stage 3) ──────────────────────────
+export {
+  detectFixFramework,
+  generateDedupFix,
+  generateParallelFix,
+  generateRetryFix,
+} from './fixer/framework-fixes';
+export type { FixFramework } from './fixer/framework-fixes';
 
 // ─── Reporter (Week 3) ──────────────────────────────────────────
 export { generateHtmlReport, type ReportOptions } from './reporter/html-report';

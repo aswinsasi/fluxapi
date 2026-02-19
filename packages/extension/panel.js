@@ -138,7 +138,7 @@ function onReq(har) {
 function analyze() {
   var apiReqs = requests.filter(function(r) { return r.type === 'api-rest' || r.type === 'api-graphql'; });
   var violations = [];
-  var effScore = 100, cacheScore = 100;
+  var effScore = 100, cacheScore = 100, patternScore = 100;
 
   // E1: Waterfall detection
   if (apiReqs.length >= 3) {
@@ -248,16 +248,173 @@ function analyze() {
     }
   });
 
+  // C2: Under-caching (repeated identical-size responses)
+  Object.keys(eps).forEach(function(ep) {
+    var g = eps[ep];
+    if (g.length >= 3) {
+      var sizes = g.map(function(r) { return r.response ? r.response.bodySize || 0 : 0; });
+      var sameSize = sizes.filter(function(s) { return s === sizes[0]; }).length;
+      var redundancy = sameSize / sizes.length;
+      if (redundancy >= 0.8 && g[0].response && (g[0].response.cacheHeaders.cacheControl || g[0].response.cacheHeaders.etag)) {
+        violations.push({
+          ruleId: 'C2', severity: 'warning',
+          title: Math.round(redundancy * 100) + '% redundant: ' + ep + ' (' + g.length + '×)',
+          description: Math.round(redundancy * 100) + '% of responses identical. Increase staleTime.',
+          endpoints: [ep],
+          impact: { timeSavedMs: Math.round((g.length - 1) * g.reduce(function(s,r){return s+r.duration},0)/g.length * 0.5), requestsEliminated: Math.round(g.length * redundancy) - 1, bandwidthSavedBytes: 0 },
+          fix: 'useQuery({ queryKey: [\'' + ep.replace(/\//g,'-').replace(/^-/,'') + '\'], queryFn: fetchFn, staleTime: 5 * 60_000 });',
+        });
+        cacheScore -= 5;
+      }
+    }
+  });
+
+  // E4: Over-fetching (large responses > 50KB)
+  apiReqs.filter(function(r) { return r.method === 'GET' && r.response && r.response.bodySize > 51200; }).forEach(function(r) {
+    var sizeKB = Math.round(r.response.bodySize / 1024);
+    violations.push({
+      ruleId: 'E4', severity: 'warning',
+      title: sizeKB + 'KB response: ' + r.urlParts.pathPattern,
+      description: 'Large response (' + sizeKB + 'KB). Consider sparse fieldsets or a lighter endpoint.',
+      endpoints: [r.urlParts.pathPattern],
+      impact: { timeSavedMs: 0, requestsEliminated: 0, bandwidthSavedBytes: Math.round(r.response.bodySize * 0.6) },
+      fix: 'fetch(\'' + r.url.split('?')[0] + '?fields=id,name,status\')',
+    });
+    effScore -= 3;
+  });
+
+  // E5: Batchable (4+ requests to same host in <200ms)
+  var hostGroups = {};
+  apiReqs.forEach(function(r) { var h = r.urlParts.host || 'unknown'; if (!hostGroups[h]) hostGroups[h] = []; hostGroups[h].push(r); });
+  Object.keys(hostGroups).forEach(function(host) {
+    var g = hostGroups[host]; if (g.length < 4) return;
+    var sorted = g.slice().sort(function(a,b) { return a.startTime - b.startTime; });
+    var burst = [sorted[0]];
+    for (var bi = 1; bi < sorted.length; bi++) {
+      if (sorted[bi].startTime - sorted[bi-1].startTime <= 200) burst.push(sorted[bi]);
+      else { if (burst.length >= 4) break; burst = [sorted[bi]]; }
+    }
+    if (burst.length >= 4) {
+      var paths = burst.map(function(r) { return r.urlParts.pathPattern; });
+      var unique = paths.filter(function(p,i) { return paths.indexOf(p) === i; });
+      if (unique.length >= 3) {
+        violations.push({
+          ruleId: 'E5', severity: 'warning',
+          title: burst.length + ' requests to ' + host + ' in ' + Math.round(burst[burst.length-1].startTime - burst[0].startTime) + 'ms',
+          description: 'Multiple endpoints on same host in tight window. Consider a batch API.',
+          endpoints: unique.slice(0, 5),
+          impact: { timeSavedMs: Math.round((burst.length - 1) * 30), requestsEliminated: burst.length - 1, bandwidthSavedBytes: 0 },
+          fix: 'fetch(\'/api/batch\', { method: \'POST\', body: JSON.stringify({ requests: [' + unique.slice(0,3).map(function(p){return '{ path: \'' + p + '\' }'}).join(', ') + '] }) });',
+        });
+        effScore -= 5;
+      }
+    }
+  });
+
+  // C3: Over-caching (long max-age but content changes)
+  Object.keys(eps).forEach(function(ep) {
+    var g = eps[ep]; if (g.length < 2) return;
+    var r0 = g[0]; if (!r0.response || !r0.response.cacheHeaders.cacheControl) return;
+    var m = r0.response.cacheHeaders.cacheControl.match(/max-age=(\d+)/);
+    if (m && parseInt(m[1]) >= 600) {
+      var sizes = g.map(function(r) { return r.response ? r.response.bodySize || 0 : 0; });
+      if (sizes.filter(function(s) { return s !== sizes[0]; }).length > 0) {
+        violations.push({
+          ruleId: 'C3', severity: 'warning', title: 'Over-cached: ' + ep + ' (max-age=' + m[1] + 's but data changes)',
+          description: 'Cache TTL is ' + m[1] + 's but content changed during scan.', endpoints: [ep],
+          impact: { timeSavedMs: 0, requestsEliminated: 0, bandwidthSavedBytes: 0 },
+          fix: '// Cache-Control: max-age=60, stale-while-revalidate=30',
+        });
+        cacheScore -= 5;
+      }
+    }
+  });
+
+  // C4: Missing revalidation (has ETag, no 304s)
+  Object.keys(eps).forEach(function(ep) {
+    var g = eps[ep]; if (g.length < 2) return;
+    var hasEtag = g.some(function(r) { return r.response && r.response.cacheHeaders.etag; });
+    var has304 = g.some(function(r) { return r.response && r.response.status === 304; });
+    if (hasEtag && !has304) {
+      violations.push({
+        ruleId: 'C4', severity: 'info', title: 'No revalidation: ' + ep,
+        description: 'Server sends ETag but client never sends If-None-Match.', endpoints: [ep],
+        impact: { timeSavedMs: 0, requestsEliminated: 0, bandwidthSavedBytes: Math.round(g.reduce(function(s,r){return s+(r.response?r.response.bodySize||0:0)},0) * 0.8) },
+        fix: 'const headers = lastEtag ? { \'If-None-Match\': lastEtag } : {};\nconst res = await fetch(\'' + ep + '\', { headers });',
+      });
+      cacheScore -= 3;
+    }
+  });
+
+  // P2: Unnecessary polling (regular interval, mostly identical)
+  Object.keys(sigs).forEach(function(sig) {
+    var g = sigs[sig]; if (g.length < 4) return;
+    var sorted = g.slice().sort(function(a,b) { return a.startTime - b.startTime; });
+    var gaps = [];
+    for (var gi = 1; gi < sorted.length; gi++) gaps.push(sorted[gi].startTime - sorted[gi-1].startTime);
+    var avgGap = gaps.reduce(function(s,g){return s+g},0) / gaps.length;
+    var variance = gaps.reduce(function(s,g){return s+Math.pow(g-avgGap,2)},0) / gaps.length;
+    var cv = Math.sqrt(variance) / avgGap;
+    if (cv < 0.3 && avgGap < 10000) {
+      var sizes = sorted.map(function(r) { return r.response ? r.response.bodySize || 0 : 0; });
+      var same = sizes.filter(function(s) { return s === sizes[0]; }).length;
+      var wastedPct = Math.round(same / sizes.length * 100);
+      if (wastedPct >= 70) {
+        violations.push({
+          ruleId: 'P2', severity: 'warning',
+          title: 'Polling ' + sig.split('|')[1] + ' every ' + Math.round(avgGap/1000) + 's (' + wastedPct + '% wasted)',
+          description: wastedPct + '% of polls return identical data.', endpoints: [sig.split('|')[1]],
+          impact: { timeSavedMs: 0, requestsEliminated: Math.round(sorted.length * wastedPct / 100), bandwidthSavedBytes: 0 },
+          fix: 'useQuery({ queryKey: [\'' + sig.split('|')[1].replace(/\//g,'-').replace(/^-/,'') + '\'], queryFn: fetchFn, refetchInterval: ' + Math.round(avgGap * 3) + ' });',
+        });
+        patternScore -= 8;
+      }
+    }
+  });
+
+  // P3: Missing error recovery (5xx with no retry)
+  var failed = apiReqs.filter(function(r) { return r.response && r.response.status >= 500; });
+  if (failed.length > 0) {
+    var failedEps = {};
+    failed.forEach(function(r) { var ep = r.urlParts.pathPattern; if (!failedEps[ep]) failedEps[ep] = []; failedEps[ep].push(r); });
+    Object.keys(failedEps).forEach(function(ep) {
+      var g = failedEps[ep];
+      violations.push({
+        ruleId: 'P3', severity: 'info',
+        title: g.length + ' failed: ' + ep + ' (no retry)',
+        description: 'Returned ' + g.map(function(r){return r.response.status}).join(', ') + ' with no retry.', endpoints: [ep],
+        impact: { timeSavedMs: 0, requestsEliminated: 0, bandwidthSavedBytes: 0 },
+        fix: 'useQuery({ queryKey: [\'' + ep.replace(/\//g,'-').replace(/^-/,'') + '\'], queryFn: fetchFn, retry: 3, retryDelay: (n) => Math.min(1000 * 2 ** n, 30000) });',
+      });
+      patternScore -= 5;
+    });
+  }
+
+  // P4: Uncompressed responses (no content-encoding, > 1KB)
+  var uncompressed = apiReqs.filter(function(r) { return r.response && r.response.bodySize > 1024 && !r.response.cacheHeaders.contentEncoding; });
+  if (uncompressed.length >= 2) {
+    var totalBytes = uncompressed.reduce(function(s,r) { return s + (r.response.bodySize || 0); }, 0);
+    violations.push({
+      ruleId: 'P4', severity: 'info',
+      title: uncompressed.length + ' uncompressed responses (~' + Math.round(totalBytes / 1024) + 'KB)',
+      description: 'No gzip/brotli. ~60-80% savings possible.', endpoints: uncompressed.slice(0,5).map(function(r){return r.urlParts.pathPattern}),
+      impact: { timeSavedMs: 0, requestsEliminated: 0, bandwidthSavedBytes: Math.round(totalBytes * 0.7) },
+      fix: '// Express: app.use(compression());\n// Nginx: gzip on; gzip_types application/json;',
+    });
+    patternScore -= 3;
+  }
+
   effScore = Math.max(0, effScore);
   cacheScore = Math.max(0, cacheScore);
-  var overall = Math.round(effScore * 0.6 + cacheScore * 0.4);
+  patternScore = Math.max(0, patternScore);
+  var overall = Math.round(effScore * 0.4 + cacheScore * 0.3 + patternScore * 0.3);
   var grade = overall >= 90 ? 'excellent' : overall >= 70 ? 'good' : overall >= 50 ? 'needs-work' : 'poor';
   var crits = violations.filter(function(v){return v.severity==='critical'}).length;
   var warns = violations.filter(function(v){return v.severity==='warning'}).length;
   var infos = violations.filter(function(v){return v.severity==='info'}).length;
 
   report = {
-    score: { overall: overall, grade: grade, efficiency: effScore, caching: cacheScore, patterns: 100 },
+    score: { overall: overall, grade: grade, efficiency: effScore, caching: cacheScore, patterns: patternScore },
     violations: violations,
     summary: { criticalCount: crits, warningCount: warns, infoCount: infos, totalViolations: violations.length },
     requests: requests,
@@ -358,7 +515,7 @@ function renderOverview() {
   var cats = [
     { icon: '⚡', name: 'Efficiency', score: s.efficiency, color: s.efficiency >= 70 ? 'var(--green)' : s.efficiency >= 50 ? 'var(--orange)' : 'var(--red)' },
     { icon: '💾', name: 'Caching', score: s.caching, color: s.caching >= 70 ? 'var(--green)' : s.caching >= 50 ? 'var(--orange)' : 'var(--red)' },
-    { icon: '🔄', name: 'Patterns', score: s.patterns, color: 'var(--green)' },
+    { icon: '🔄', name: 'Patterns', score: s.patterns, color: s.patterns >= 70 ? 'var(--green)' : s.patterns >= 50 ? 'var(--orange)' : 'var(--red)' },
   ];
   cats.forEach(function(c) {
     h += '<div class="cat-row"><span class="cat-icon">' + c.icon + '</span><span class="cat-name">' + c.name + '</span>';

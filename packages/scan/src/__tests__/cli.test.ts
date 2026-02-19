@@ -212,7 +212,8 @@ describe('CLI Session Loading', () => {
         },
       ],
       navigations: [],
-      stack: { framework: { name: 'react', version: '18' }, dataLibrary: { name: 'tanstack-query', version: '5' }, apiType: 'rest', backendHints: { poweredBy: null, server: null, detectedFramework: null } },
+      websockets: { connections: [], totalMessages: 0, messagesPerSecond: 0 },
+      stack: { framework: { name: 'react', version: '18', metaFramework: null }, dataLibrary: { name: 'tanstack-query', version: '5' }, apiType: 'rest', backendHints: { poweredBy: null, server: null, detectedFramework: null } },
       config: { duration: 30, network: 'wifi', ignore: [], captureFields: false, maxRequests: 5000, minDuration: 0, verbose: false },
       metadata: { pageUrl: 'https://example.com', userAgent: 'test', scanDuration: 30000, totalRequests: 1, apiRequests: 1, uniqueEndpoints: 1, uniqueHosts: ['api.example.com'] },
     };
@@ -238,6 +239,7 @@ describe('CLI Session Loading', () => {
       endTime: 30000,
       requests: [],
       navigations: [],
+      websockets: { connections: [], totalMessages: 0, messagesPerSecond: 0 },
       stack: { framework: null, dataLibrary: null, apiType: 'rest', backendHints: { poweredBy: null, server: null, detectedFramework: null } },
       config: { duration: 30, network: 'wifi', ignore: [], captureFields: false, maxRequests: 5000, minDuration: 0, verbose: false },
       metadata: { pageUrl: 'https://test.com', userAgent: 'CLI', scanDuration: 30000, totalRequests: 0, apiRequests: 0, uniqueEndpoints: 0, uniqueHosts: [] },

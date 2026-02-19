@@ -143,7 +143,7 @@ export function mockSession(requests: FluxRequestRecord[]): FluxScanSession {
   };
 
   const stack: DetectedStack = {
-    framework: { name: 'react', version: '18.2.0' },
+    framework: { name: 'react', version: '18.2.0', metaFramework: null },
     dataLibrary: { name: 'tanstack-query', version: '5.0.0' },
     apiType: 'rest',
     backendHints: { poweredBy: 'Express', server: null, detectedFramework: 'express' },
@@ -155,6 +155,7 @@ export function mockSession(requests: FluxRequestRecord[]): FluxScanSession {
     endTime: 60000,
     requests,
     navigations: [],
+    websockets: { connections: [], totalMessages: 0, messagesPerSecond: 0 },
     stack,
     config: { ...DEFAULT_CONFIG },
     metadata,

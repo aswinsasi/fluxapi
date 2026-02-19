@@ -203,41 +203,66 @@ export function captureInitiator(): RequestInitiator {
 
 /**
  * Attempt to detect the frontend framework from the global scope.
+ * Supports React, Next.js, Vue, Nuxt, Svelte, SvelteKit, Angular.
  */
-export function detectFramework(): { name: string; version: string | null } | null {
+export function detectFramework(): { name: string; version: string | null; metaFramework: string | null } | null {
   if (typeof window === 'undefined') return null;
 
-  // React
-  if ((window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__) {
-    const reactDOM = (window as any).__REACT_DEVTOOLS_GLOBAL_HOOK__?.renderers;
+  const w = window as any;
+  const doc = typeof document !== 'undefined' ? document : null;
+
+  // ─── Next.js (check before React — Next.js apps also have React) ──
+  if (w.__NEXT_DATA__ || w.__next) {
+    const nextVersion = doc?.querySelector('meta[name="next-version"]')?.getAttribute('content') || null;
+    return { name: 'react', version: null, metaFramework: nextVersion ? `next.js ${nextVersion}` : 'next.js' };
+  }
+
+  // ─── Nuxt (check before Vue — Nuxt apps also have Vue) ──
+  if (w.__NUXT__ || w.__NUXT_ASYNC_DATA__ || w.$nuxt) {
+    const nuxtVersion = w.__NUXT__?.config?.version || null;
+    return { name: 'vue', version: null, metaFramework: nuxtVersion ? `nuxt ${nuxtVersion}` : 'nuxt' };
+  }
+
+  // ─── React ──
+  if (w.__REACT_DEVTOOLS_GLOBAL_HOOK__) {
+    const renderers = w.__REACT_DEVTOOLS_GLOBAL_HOOK__?.renderers;
     let version: string | null = null;
-    if (reactDOM) {
-      reactDOM.forEach((renderer: any) => {
+    if (renderers) {
+      renderers.forEach((renderer: any) => {
         if (renderer.version) version = renderer.version;
       });
     }
-    return { name: 'react', version };
+    // Check for Remix
+    if (w.__remixContext || w.__REMIX_DEV_TOOLS) {
+      return { name: 'react', version, metaFramework: 'remix' };
+    }
+    return { name: 'react', version, metaFramework: null };
   }
 
-  // Vue 3
-  if ((window as any).__VUE__) {
-    return { name: 'vue', version: (window as any).__VUE__?.version || null };
+  // ─── Vue 3 ──
+  if (w.__VUE__) {
+    return { name: 'vue', version: w.__VUE__?.version || null, metaFramework: null };
   }
 
-  // Vue 2
-  if ((window as any).__VUE_DEVTOOLS_GLOBAL_HOOK__) {
-    return { name: 'vue', version: null };
+  // ─── Vue 2 ──
+  if (w.__VUE_DEVTOOLS_GLOBAL_HOOK__) {
+    return { name: 'vue', version: null, metaFramework: null };
   }
 
-  // Svelte
-  if (document.querySelector('[class*="svelte-"]')) {
-    return { name: 'svelte', version: null };
+  // ─── SvelteKit ──
+  if (w.__sveltekit) {
+    return { name: 'svelte', version: null, metaFramework: 'sveltekit' };
   }
 
-  // Angular
-  if ((window as any).ng?.probe || document.querySelector('[ng-version]')) {
-    const version = document.querySelector('[ng-version]')?.getAttribute('ng-version') || null;
-    return { name: 'angular', version };
+  // ─── Svelte ──
+  if (doc?.querySelector('[class*="svelte-"]') || doc?.querySelector('[data-svelte]')) {
+    return { name: 'svelte', version: null, metaFramework: null };
+  }
+
+  // ─── Angular ──
+  if (w.ng?.probe || w.getAllAngularRootElements || doc?.querySelector('[ng-version]')) {
+    const version = doc?.querySelector('[ng-version]')?.getAttribute('ng-version') || null;
+    return { name: 'angular', version, metaFramework: null };
   }
 
   return null;
@@ -249,20 +274,32 @@ export function detectFramework(): { name: string; version: string | null } | nu
 export function detectDataLibrary(): { name: string; version: string | null } | null {
   if (typeof window === 'undefined') return null;
 
+  const w = window as any;
+
   // TanStack Query (v4/v5)
-  if ((window as any).__REACT_QUERY_DEVTOOLS__ || (window as any).__TANSTACK_QUERY_DEVTOOLS__) {
+  if (w.__REACT_QUERY_DEVTOOLS__ || w.__TANSTACK_QUERY_DEVTOOLS__ || w.__REACT_QUERY_GLOBAL_CACHE__) {
     return { name: 'tanstack-query', version: null };
   }
 
   // SWR
-  if ((window as any).__SWR_DEVTOOLS_NEXT__) {
+  if (w.__SWR_DEVTOOLS_NEXT__ || w.__SWR_STORE__) {
     return { name: 'swr', version: null };
   }
 
   // Apollo Client
-  if ((window as any).__APOLLO_CLIENT__) {
-    const version = (window as any).__APOLLO_CLIENT__?.version || null;
+  if (w.__APOLLO_CLIENT__) {
+    const version = w.__APOLLO_CLIENT__?.version || null;
     return { name: 'apollo', version };
+  }
+
+  // RTK Query (part of Redux Toolkit)
+  if (w.__REDUX_DEVTOOLS_EXTENSION__ && w.__RTK_QUERY__) {
+    return { name: 'rtk-query', version: null };
+  }
+
+  // urql
+  if (w.__URQL_DEVTOOLS__) {
+    return { name: 'urql', version: null };
   }
 
   return null;

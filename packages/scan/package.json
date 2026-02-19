@@ -1,6 +1,6 @@
 {
   "name": "@fluxiapi/scan",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Lighthouse for your API calls — find waterfalls, duplicate fetches, N+1 patterns, and missing cache in your React app",
   "author": "Aswin <aswin@fluxapi.dev>",
   "license": "MIT",

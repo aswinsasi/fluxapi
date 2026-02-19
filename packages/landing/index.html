@@ -148,6 +148,7 @@ h1 .gradient{
 .card-badge.crit{background:rgba(248,113,113,0.12);color:var(--red)}
 .card-badge.warn{background:rgba(251,191,36,0.12);color:var(--orange)}
 .card-badge.fix{background:rgba(52,211,153,0.12);color:var(--green)}
+.card-badge.info{background:rgba(96,165,250,0.12);color:#60a5fa}
 
 /* ═══════════ HOW IT WORKS ═══════════ */
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;max-width:900px;margin:0 auto}
@@ -275,18 +276,21 @@ footer a{color:var(--fg3)}
         <br>
         <div class="out">  <span class="accent">⚡ Efficiency</span>   <span class="bad">██████░░░░░░░░░░░░░░ 30%</span></div>
         <div class="out">  <span class="accent">💾 Caching</span>      <span class="warn">████████████░░░░░░░░ 55%</span></div>
-        <div class="out">  <span class="accent">🔄 Patterns</span>     <span class="good">████████████████████ 100%</span></div>
+        <div class="out">  <span class="accent">🔄 Patterns</span>     <span class="warn">██████████████░░░░░░ 70%</span></div>
+        <br>
+        <div class="out">  <span class="dim">⚛️ React 18.2.0 (Next.js) · TanStack Query v5</span></div>
+        <div class="out">  <span class="dim">🌐 2 WebSocket connections · 142 messages</span></div>
         <br>
         <div class="out">  Issues Found:</div>
-        <div class="out">    <span class="bad">🔴 8 critical</span>  <span class="warn">🟡 3 warnings</span>  <span class="dim">ℹ️  1 info</span></div>
+        <div class="out">    <span class="bad">🔴 5 critical</span>  <span class="warn">🟡 5 warnings</span>  <span class="dim">ℹ️  3 info</span></div>
         <br>
         <div class="out">  Top Fixes:</div>
         <div class="out">    <span class="accent">E2:</span> GET /api/user called 4x from 4 components</div>
         <div class="out">       <span class="good">⚡ 600ms faster  📉 3 fewer requests</span></div>
         <div class="out">    <span class="accent">E3:</span> N+1: 25 individual GET /products/:id</div>
         <div class="out">       <span class="good">⚡ 2.1s faster  📉 24 fewer requests</span></div>
-        <div class="out">    <span class="accent">C1:</span> No cache headers on 5 endpoints</div>
-        <div class="out">       <span class="good">💾 48KB bandwidth saved</span></div>
+        <div class="out">    <span class="accent">P2:</span> Polling /api/status every 2s (95% wasted)</div>
+        <div class="out">       <span class="good">📉 28 fewer requests  💾 12KB saved</span></div>
       </div>
     </div>
   </div>
@@ -295,7 +299,7 @@ footer a{color:var(--fg3)}
 <!-- What It Finds -->
 <section class="section" id="features">
   <h2 class="section-title fade-in">What it finds</h2>
-  <p class="section-sub fade-in">5 audit rules that catch the API anti-patterns killing your app performance</p>
+  <p class="section-sub fade-in">13 audit rules that catch the API anti-patterns killing your app performance</p>
 
   <div class="grid">
     <div class="card fade-in">
@@ -317,6 +321,18 @@ footer a{color:var(--fg3)}
       <span class="card-badge crit">E3 · Critical</span>
     </div>
     <div class="card fade-in">
+      <div class="card-icon">📦</div>
+      <div class="card-title">Payload Over-fetching</div>
+      <div class="card-desc">API returns 50 fields but app reads 6. That's 88% wasted bytes. Suggests GraphQL or sparse fieldsets.</div>
+      <span class="card-badge warn">E4 · Warning</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">📮</div>
+      <div class="card-title">Batchable Requests</div>
+      <div class="card-desc">5 separate calls to the same service in a tight window. A single batch endpoint cuts it to 1 round-trip.</div>
+      <span class="card-badge warn">E5 · Warning</span>
+    </div>
+    <div class="card fade-in">
       <div class="card-icon">🚫</div>
       <div class="card-title">No Cache Strategy</div>
       <div class="card-desc">Endpoints with zero caching — no Cache-Control, no ETag, no staleTime. Every mount triggers a fresh network round-trip.</div>
@@ -325,14 +341,56 @@ footer a{color:var(--fg3)}
     <div class="card fade-in">
       <div class="card-icon">🔄</div>
       <div class="card-title">Under-Caching</div>
-      <div class="card-desc">95% of fetches return identical data. Compares response hashes and recommends the optimal staleTime for your data change frequency.</div>
+      <div class="card-desc">95% of fetches return identical data. Recommends optimal staleTime for your data change frequency.</div>
       <span class="card-badge warn">C2 · Warning</span>
     </div>
     <div class="card fade-in">
+      <div class="card-icon">⏰</div>
+      <div class="card-title">Over-Caching</div>
+      <div class="card-desc">Cache TTL of 10 min but data changes every 30s. Users see stale data. Suggests stale-while-revalidate.</div>
+      <span class="card-badge warn">C3 · Warning</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🏷️</div>
+      <div class="card-title">Missing Revalidation</div>
+      <div class="card-desc">Server sends ETags but client ignores them. Full re-downloads when a 304 would return 200 bytes.</div>
+      <span class="card-badge info">C4 · Info</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🔮</div>
+      <div class="card-title">Missing Prefetch</div>
+      <div class="card-desc">85% of users go Dashboard → Orders. Prefetching the data while they're still on Dashboard saves 400ms.</div>
+      <span class="card-badge warn">P1 · Warning</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🔁</div>
+      <div class="card-title">Unnecessary Polling</div>
+      <div class="card-desc">Polling every 2s but data changes once a minute. 95% of polls wasted. Switch to SSE or increase interval.</div>
+      <span class="card-badge warn">P2 · Warning</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">💔</div>
+      <div class="card-title">Missing Error Recovery</div>
+      <div class="card-desc">API returns 500 and the UI just breaks. No retry, no fallback. Adds exponential backoff config.</div>
+      <span class="card-badge info">P3 · Info</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🗜️</div>
+      <div class="card-title">Uncompressed Responses</div>
+      <div class="card-desc">JSON responses without gzip or brotli. 60-80% of bandwidth wasted. Server-side fix in one line.</div>
+      <span class="card-badge info">P4 · Info</span>
+    </div>
+    <div class="card fade-in">
       <div class="card-icon">🔧</div>
-      <div class="card-title">Auto-Generated Fixes</div>
-      <div class="card-desc">Every violation comes with copy-pasteable React + TanStack Query code. Shared hooks, useSuspenseQueries, batch patterns — ready to ship.</div>
+      <div class="card-title">Framework-Aware Fixes</div>
+      <div class="card-desc">Auto-detects your stack — React, Vue, Next.js, Nuxt, Angular, SWR, Apollo — and generates fix code that matches your framework.</div>
       <span class="card-badge fix">Auto-fixable</span>
+    </div>
+    <div class="card fade-in">
+      <div class="card-icon">🌐</div>
+      <div class="card-title">WebSocket & GraphQL</div>
+      <div class="card-desc">Monitors WS connections, message rates, subscriptions. Deduplicates GraphQL queries by operation + variables hash.</div>
+      <span class="card-badge fix">Intelligence</span>
     </div>
   </div>
 </section>
@@ -351,12 +409,12 @@ footer a{color:var(--fg3)}
     <div class="step fade-in">
       <div class="step-num">2</div>
       <div class="step-title">Analyze</div>
-      <div class="step-desc">5 audit rules score your API layer 0-100. Network-adjusted scoring shows how patterns compound on Jio 4G vs WiFi.</div>
+      <div class="step-desc">13 audit rules score your API layer 0-100. Network-adjusted scoring shows how patterns compound on Jio 4G vs WiFi.</div>
     </div>
     <div class="step fade-in">
       <div class="step-num">3</div>
       <div class="step-title">Fix</div>
-      <div class="step-desc">Each violation generates React + TanStack Query code you can copy-paste. The HTML report has one-click clipboard for every fix.</div>
+      <div class="step-desc">Each violation generates framework-aware fix code — React, Vue, Angular, SWR, Apollo. Auto-detects your stack and adapts the fix.</div>
     </div>
   </div>
 </section>

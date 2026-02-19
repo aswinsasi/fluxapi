@@ -178,10 +178,12 @@ export interface DetectedStack {
 export interface FrameworkInfo {
   name: 'react' | 'vue' | 'svelte' | 'angular' | 'unknown';
   version: string | null;
+  /** Meta-framework like Next.js, Nuxt, Remix, SvelteKit */
+  metaFramework: string | null;
 }
 
 export interface DataLibraryInfo {
-  name: 'tanstack-query' | 'swr' | 'apollo' | 'rtk-query' | 'none';
+  name: 'tanstack-query' | 'swr' | 'apollo' | 'rtk-query' | 'urql' | 'none';
   version: string | null;
 }
 
@@ -257,6 +259,8 @@ export interface FluxScanSession {
   requests: FluxRequestRecord[];
   /** All navigation events */
   navigations: NavigationEvent[];
+  /** WebSocket activity during scan */
+  websockets: WebSocketSummary;
   /** Detected technology stack */
   stack: DetectedStack;
   /** Scanner configuration used */
@@ -289,10 +293,71 @@ export type FluxEvent =
   | { type: 'request:end'; data: FluxRequestRecord }
   | { type: 'request:error'; data: FluxRequestRecord }
   | { type: 'navigation'; data: NavigationEvent }
+  | { type: 'websocket:open'; data: WebSocketEvent }
+  | { type: 'websocket:message'; data: WebSocketEvent }
+  | { type: 'websocket:close'; data: WebSocketEvent }
   | { type: 'scan:start'; data: { sessionId: string; config: FluxScanConfig } }
   | { type: 'scan:end'; data: FluxScanSession };
 
 export type FluxEventHandler = (event: FluxEvent) => void;
+
+// ─── WebSocket Monitoring ──────────────────────────────────────
+
+export interface WebSocketEvent {
+  /** Unique ID */
+  id: string;
+  /** WebSocket URL */
+  url: string;
+  /** Event type */
+  eventType: 'open' | 'message' | 'close' | 'error';
+  /** Timestamp */
+  timestamp: number;
+  /** Message size in bytes (for message events) */
+  messageSize: number | null;
+  /** Message direction */
+  direction: 'sent' | 'received' | null;
+  /** Subscription/channel name if detected */
+  channel: string | null;
+}
+
+export interface WebSocketSummary {
+  /** All tracked WebSocket connections */
+  connections: WebSocketConnection[];
+  /** Total messages sent/received */
+  totalMessages: number;
+  /** Messages per second */
+  messagesPerSecond: number;
+}
+
+export interface WebSocketConnection {
+  /** WebSocket URL */
+  url: string;
+  /** When connection opened */
+  openedAt: number;
+  /** When connection closed (null if still open) */
+  closedAt: number | null;
+  /** Total messages received */
+  messagesReceived: number;
+  /** Total messages sent */
+  messagesSent: number;
+  /** Average message size */
+  avgMessageSize: number;
+  /** Detected channels/subscriptions */
+  channels: string[];
+}
+
+// ─── GraphQL Detection ─────────────────────────────────────────
+
+export interface GraphQLOperation {
+  /** Operation name (query UserProfile) */
+  operationName: string | null;
+  /** Operation type (query, mutation, subscription) */
+  operationType: 'query' | 'mutation' | 'subscription' | 'unknown';
+  /** Hash of variables for dedup detection */
+  variablesHash: string;
+  /** The request record */
+  request: FluxRequestRecord;
+}
 
 // ─── Default Configuration ──────────────────────────────────────
 

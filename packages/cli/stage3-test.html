@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FluxAPI Report — https://jsonplaceholder.typicode.com</title>
+  <style>
+    :root, [data-theme="light"] {
+      --bg: #ffffff; --bg2: #f8f9fa; --bg3: #e9ecef;
+      --fg: #1a1a2e; --fg2: #495057; --fg3: #868e96;
+      --border: #dee2e6; --border2: #ced4da;
+      --accent: #6366f1; --accent2: #818cf8;
+      --red: #ef4444; --orange: #f59e0b; --green: #22c55e; --blue: #3b82f6;
+      --code-bg: #1e1e2e; --code-fg: #cdd6f4;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] {
+      --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+      --fg: #e2e8f0; --fg2: #a0aec0; --fg3: #718096;
+      --border: #2d3748; --border2: #4a5568;
+      --accent: #818cf8; --accent2: #a5b4fc;
+      --code-bg: #0d1117; --code-fg: #c9d1d9;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    @media (prefers-color-scheme: dark) {
+      [data-theme="auto"] {
+        --bg: #1a1a2e; --bg2: #16213e; --bg3: #0f3460;
+        --fg: #e2e8f0; --fg2: #a0aec0; --fg3: #718096;
+        --border: #2d3748; --border2: #4a5568;
+        --accent: #818cf8; --accent2: #a5b4fc;
+        --code-bg: #0d1117; --code-fg: #c9d1d9;
+        --shadow: 0 1px 3px rgba(0,0,0,0.3);
+        --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+      }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--fg);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+
+    .fx-report { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+    /* Header */
+    .fx-header { margin-bottom: 32px; }
+    .fx-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .fx-logo-text { font-size: 20px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+    .fx-title { font-size: 18px; font-weight: 600; color: var(--fg); margin-bottom: 8px; }
+    .fx-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: var(--fg2); }
+    .fx-meta-item { white-space: nowrap; }
+    .fx-network-badge { background: var(--accent); color: white; padding: 1px 8px; border-radius: 99px; font-weight: 600; }
+
+    /* Score Section */
+    .fx-score-section { display: flex; gap: 32px; align-items: center; margin-bottom: 32px; flex-wrap: wrap; justify-content: center; }
+    .fx-gauge-container { text-align: center; }
+    .fx-gauge { position: relative; width: 160px; height: 160px; margin: 0 auto 12px; }
+    .fx-gauge-ring { position: absolute; inset: 0; }
+    .fx-gauge-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .fx-gauge-bg { fill: none; stroke: var(--bg3); stroke-width: 8; }
+    .fx-gauge-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dasharray 1.5s ease; }
+    .fx-gauge-value { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .fx-gauge-number { font-size: 42px; font-weight: 800; line-height: 1; color: var(--color, var(--fg)); }
+    .fx-gauge-label { font-size: 12px; color: var(--fg3); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+    .fx-grade { font-size: 15px; font-weight: 700; text-align: center; }
+    .fx-grade-excellent { color: var(--green); }
+    .fx-grade-good { color: var(--blue); }
+    .fx-grade-needs-work { color: var(--orange); }
+    .fx-grade-poor { color: var(--red); }
+    .fx-network-score { font-size: 13px; color: var(--fg2); text-align: center; margin-top: 6px; }
+
+    .fx-score-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; flex: 1; min-width: 200px; }
+    .fx-stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+    .fx-stat-value { font-size: 28px; font-weight: 800; }
+    .fx-stat-label { font-size: 12px; color: var(--fg3); text-transform: uppercase; letter-spacing: 0.5px; }
+    .fx-stat-critical .fx-stat-value { color: var(--red); }
+    .fx-stat-warning .fx-stat-value { color: var(--orange); }
+    .fx-stat-info .fx-stat-value { color: var(--blue); }
+    .fx-stat-fixable .fx-stat-value { color: var(--green); }
+
+    /* Category Bars */
+    .fx-categories { margin-bottom: 32px; }
+    .fx-section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+    .fx-cat-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+    .fx-cat-label { width: 130px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .fx-cat-icon { font-size: 16px; }
+    .fx-cat-bar-track { flex: 1; height: 10px; background: var(--bg3); border-radius: 99px; overflow: hidden; }
+    .fx-cat-bar-fill { height: 100%; border-radius: 99px; transition: width 1s ease; min-width: 4px; }
+    .fx-cat-score { width: 36px; text-align: right; font-weight: 700; font-size: 15px; }
+
+    /* Impact */
+    .fx-impact { margin-bottom: 32px; }
+    .fx-impact-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .fx-impact-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+    .fx-impact-icon { font-size: 24px; margin-bottom: 4px; }
+    .fx-impact-value { font-size: 22px; font-weight: 800; color: var(--accent); }
+    .fx-impact-label { font-size: 12px; color: var(--fg3); }
+    .fx-impact-clean { background: var(--bg2); border: 1px solid var(--green); border-radius: 12px; padding: 24px; text-align: center; font-size: 16px; color: var(--green); }
+
+    /* Audit Cards */
+    .fx-audits { margin-bottom: 32px; }
+    .fx-audit-card { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; overflow: hidden; background: var(--bg); }
+    .fx-audit-card.fx-audit-fail { border-left: 3px solid var(--red); }
+    .fx-audit-card.fx-audit-pass { border-left: 3px solid var(--green); }
+    .fx-audit-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; cursor: pointer; user-select: none; }
+    .fx-audit-header:hover { background: var(--bg2); }
+    .fx-audit-status { font-size: 18px; flex-shrink: 0; }
+    .fx-audit-info { flex: 1; min-width: 0; }
+    .fx-audit-name { font-size: 14px; font-weight: 600; }
+    .fx-audit-desc { font-size: 12px; color: var(--fg3); }
+    .fx-audit-badges { display: flex; gap: 6px; flex-shrink: 0; }
+    .fx-audit-chevron { font-size: 14px; color: var(--fg3); transition: transform 0.2s; }
+    .fx-expanded .fx-audit-chevron { transform: rotate(180deg); }
+    .fx-audit-body { display: none; border-top: 1px solid var(--border); padding: 16px; }
+    .fx-expanded .fx-audit-body { display: block; }
+
+    /* Badges */
+    .fx-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+    .fx-badge-critical { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+    .fx-badge-warning { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+    .fx-badge-info { background: #eff6ff; color: var(--blue); border: 1px solid #bfdbfe; }
+    .fx-badge-count { background: var(--bg3); color: var(--fg2); }
+    .fx-badge-score { font-weight: 800; background: transparent; }
+    @media (prefers-color-scheme: dark) {
+      [data-theme="auto"] .fx-badge-critical { background: #450a0a; border-color: #7f1d1d; }
+      [data-theme="auto"] .fx-badge-warning { background: #451a03; border-color: #78350f; }
+      [data-theme="auto"] .fx-badge-info { background: #172554; border-color: #1e3a5f; }
+    }
+    [data-theme="dark"] .fx-badge-critical { background: #450a0a; border-color: #7f1d1d; }
+    [data-theme="dark"] .fx-badge-warning { background: #451a03; border-color: #78350f; }
+    [data-theme="dark"] .fx-badge-info { background: #172554; border-color: #1e3a5f; }
+
+    /* Violations */
+    .fx-violation { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .fx-violation:last-child { border-bottom: none; }
+    .fx-violation-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .fx-severity-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .fx-severity-critical { background: var(--red); }
+    .fx-severity-warning { background: var(--orange); }
+    .fx-severity-info { background: var(--blue); }
+    .fx-violation-title { font-size: 13px; font-weight: 600; }
+    .fx-violation-desc { font-size: 13px; color: var(--fg2); margin-bottom: 8px; line-height: 1.5; }
+    .fx-violation-impact { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .fx-impact-tag { font-size: 12px; background: var(--bg2); padding: 3px 10px; border-radius: 99px; color: var(--fg2); border: 1px solid var(--border); white-space: nowrap; }
+
+    /* Mini Timeline */
+    .fx-mini-timeline { margin: 8px 0 12px; }
+    .fx-tl-label { font-size: 11px; color: var(--fg3); margin-bottom: 4px; }
+    .fx-tl-track { position: relative; height: 24px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+    .fx-tl-bar { position: absolute; top: 3px; height: 18px; background: var(--accent); border-radius: 3px; opacity: 0.8; min-width: 4px; }
+    .fx-tl-bar:nth-child(odd) { background: var(--accent2); }
+
+    /* Fix Code */
+    .fx-fix { margin-top: 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+    .fx-fix-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .fx-fix-icon { font-size: 16px; }
+    .fx-fix-title { font-size: 13px; font-weight: 600; }
+    .fx-fix-deps { font-size: 11px; color: var(--accent); background: var(--bg); padding: 2px 8px; border-radius: 4px; }
+    .fx-fix-explanation { font-size: 12px; color: var(--fg2); margin-bottom: 10px; line-height: 1.5; }
+    .fx-code-block { position: relative; border-radius: 8px; overflow: hidden; }
+    .fx-code-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #161b22; border-bottom: 1px solid #30363d; }
+    .fx-code-filename { font-size: 12px; color: #8b949e; font-family: 'SF Mono', 'Fira Code', monospace; }
+    .fx-copy-btn { background: transparent; border: 1px solid #30363d; color: #8b949e; padding: 3px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .fx-copy-btn:hover { background: #21262d; color: #c9d1d9; }
+    .fx-copy-btn.fx-copied { color: var(--green); border-color: var(--green); }
+    pre { background: var(--code-bg); color: var(--code-fg); padding: 14px; overflow-x: auto; font-size: 12.5px; line-height: 1.55; font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace; }
+    code { font-family: inherit; }
+    .fx-alt-code { margin-top: 8px; }
+    .fx-alt-code summary { font-size: 12px; color: var(--fg3); cursor: pointer; padding: 4px 0; }
+
+    /* Footer */
+    .fx-footer { text-align: center; padding: 24px 0 16px; border-top: 1px solid var(--border); margin-top: 24px; }
+    .fx-footer-text { font-size: 13px; color: var(--fg3); }
+    .fx-footer-links { font-size: 12px; margin-top: 4px; }
+    .fx-footer-links a { color: var(--accent); text-decoration: none; }
+    .fx-footer-links a:hover { text-decoration: underline; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .fx-score-section { flex-direction: column; }
+      .fx-score-summary { grid-template-columns: repeat(2, 1fr); width: 100%; }
+      .fx-audit-badges { display: none; }
+      .fx-meta { font-size: 12px; gap: 8px; }
+      .fx-cat-label { width: 100px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="fx-report">
+    
+    <header class="fx-header">
+      <div class="fx-logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="8" fill="var(--accent)"/>
+          <path d="M8 10h16M8 16h12M8 22h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span class="fx-logo-text">FluxAPI</span>
+      </div>
+      <h1 class="fx-title">FluxAPI Report — https://jsonplaceholder.typicode.com</h1>
+      <div class="fx-meta">
+        <span class="fx-meta-item">📍 https://jsonplaceholder.typicode.com</span>
+        <span class="fx-meta-item">⏱️ 15.0s scan</span>
+        <span class="fx-meta-item">📡 3 API calls</span>
+        <span class="fx-meta-item">🔌 15 endpoints</span>
+        
+        
+        
+      </div>
+    </header>
+    
+    <section class="fx-score-section">
+      <div class="fx-gauge-container">
+        <div class="fx-gauge" style="--score: 100; --color: var(--green); --deg: 360deg">
+          <div class="fx-gauge-ring">
+            <svg viewBox="0 0 120 120">
+              <circle class="fx-gauge-bg" cx="60" cy="60" r="54" />
+              <circle class="fx-gauge-fill" cx="60" cy="60" r="54"
+                stroke-dasharray="339.3 339.3"
+                style="stroke: var(--green)" />
+            </svg>
+          </div>
+          <div class="fx-gauge-value">
+            <span class="fx-gauge-number" data-target="100">0</span>
+            <span class="fx-gauge-label">API Health</span>
+          </div>
+        </div>
+        <div class="fx-grade fx-grade-excellent" title="excellent">🟢 Excellent</div>
+        
+      </div>
+      <div class="fx-score-summary">
+        <div class="fx-stat-card fx-stat-critical">
+          <div class="fx-stat-value">0</div>
+          <div class="fx-stat-label">Critical</div>
+        </div>
+        <div class="fx-stat-card fx-stat-warning">
+          <div class="fx-stat-value">0</div>
+          <div class="fx-stat-label">Warnings</div>
+        </div>
+        <div class="fx-stat-card fx-stat-info">
+          <div class="fx-stat-value">0</div>
+          <div class="fx-stat-label">Info</div>
+        </div>
+        <div class="fx-stat-card fx-stat-fixable">
+          <div class="fx-stat-value">0</div>
+          <div class="fx-stat-label">Auto-fixable</div>
+        </div>
+      </div>
+    </section>
+    
+    <section class="fx-categories">
+      <h2 class="fx-section-title">Category Scores</h2>
+      
+      <div class="fx-cat-row">
+        <div class="fx-cat-label">
+          <span class="fx-cat-icon">⚡</span>
+          <span>Efficiency</span>
+        </div>
+        <div class="fx-cat-bar-track">
+          <div class="fx-cat-bar-fill" style="width: 100%; background: var(--green)"></div>
+        </div>
+        <div class="fx-cat-score" style="color: var(--green)">100</div>
+      </div>
+      <div class="fx-cat-row">
+        <div class="fx-cat-label">
+          <span class="fx-cat-icon">💾</span>
+          <span>Caching</span>
+        </div>
+        <div class="fx-cat-bar-track">
+          <div class="fx-cat-bar-fill" style="width: 100%; background: var(--green)"></div>
+        </div>
+        <div class="fx-cat-score" style="color: var(--green)">100</div>
+      </div>
+      <div class="fx-cat-row">
+        <div class="fx-cat-label">
+          <span class="fx-cat-icon">🔄</span>
+          <span>Patterns</span>
+        </div>
+        <div class="fx-cat-bar-track">
+          <div class="fx-cat-bar-fill" style="width: 100%; background: var(--green)"></div>
+        </div>
+        <div class="fx-cat-score" style="color: var(--green)">100</div>
+      </div>
+    </section>
+    
+      <section class="fx-impact">
+        <h2 class="fx-section-title">Estimated Impact</h2>
+        <div class="fx-impact-clean">✨ No significant issues found. Your API layer looks great!</div>
+      </section>
+    
+    <section class="fx-audits">
+      <h2 class="fx-section-title">Audit Results</h2>
+      
+    <div class="fx-audit-card fx-audit-pass">
+      <div class="fx-audit-header" onclick="this.parentElement.classList.toggle('fx-expanded')">
+        <div class="fx-audit-status">✅</div>
+        <div class="fx-audit-info">
+          <div class="fx-audit-name">E1: Request Waterfall</div>
+          <div class="fx-audit-desc">Sequential requests that could run in parallel</div>
+        </div>
+        <div class="fx-audit-badges">
+          <span class="fx-badge fx-badge-critical">critical</span>
+          <span class="fx-badge fx-badge-score" style="color: var(--green)">15/15</span>
+          
+        </div>
+        <div class="fx-audit-chevron">▾</div>
+      </div>
+      <div class="fx-audit-body">
+        
+      </div>
+    </div>
+    <div class="fx-audit-card fx-audit-pass">
+      <div class="fx-audit-header" onclick="this.parentElement.classList.toggle('fx-expanded')">
+        <div class="fx-audit-status">✅</div>
+        <div class="fx-audit-info">
+          <div class="fx-audit-name">E2: Duplicate Requests</div>
+          <div class="fx-audit-desc">Same data fetched multiple times simultaneously</div>
+        </div>
+        <div class="fx-audit-badges">
+          <span class="fx-badge fx-badge-critical">critical</span>
+          <span class="fx-badge fx-badge-score" style="color: var(--green)">15/15</span>
+          
+        </div>
+        <div class="fx-audit-chevron">▾</div>
+      </div>
+      <div class="fx-audit-body">
+        
+      </div>
+    </div>
+    <div class="fx-audit-card fx-audit-pass">
+      <div class="fx-audit-header" onclick="this.parentElement.classList.toggle('fx-expanded')">
+        <div class="fx-audit-status">✅</div>
+        <div class="fx-audit-info">
+          <div class="fx-audit-name">E3: N+1 Query Pattern</div>
+          <div class="fx-audit-desc">Individual requests per list item instead of batch</div>
+        </div>
+        <div class="fx-audit-badges">
+          <span class="fx-badge fx-badge-critical">critical</span>
+          <span class="fx-badge fx-badge-score" style="color: var(--green)">12/12</span>
+          
+        </div>
+        <div class="fx-audit-chevron">▾</div>
+      </div>
+      <div class="fx-audit-body">
+        
+      </div>
+    </div>
+    <div class="fx-audit-card fx-audit-pass">
+      <div class="fx-audit-header" onclick="this.parentElement.classList.toggle('fx-expanded')">
+        <div class="fx-audit-status">✅</div>
+        <div class="fx-audit-info">
+          <div class="fx-audit-name">C1: No Cache Strategy</div>
+          <div class="fx-audit-desc">Endpoints with zero caching configuration</div>
+        </div>
+        <div class="fx-audit-badges">
+          <span class="fx-badge fx-badge-critical">critical</span>
+          <span class="fx-badge fx-badge-score" style="color: var(--green)">12/12</span>
+          
+        </div>
+        <div class="fx-audit-chevron">▾</div>
+      </div>
+      <div class="fx-audit-body">
+        
+      </div>
+    </div>
+    <div class="fx-audit-card fx-audit-pass">
+      <div class="fx-audit-header" onclick="this.parentElement.classList.toggle('fx-expanded')">
+        <div class="fx-audit-status">✅</div>
+        <div class="fx-audit-info">
+          <div class="fx-audit-name">C2: Under-Caching</div>
+          <div class="fx-audit-desc">Data refreshed far more often than it changes</div>
+        </div>
+        <div class="fx-audit-badges">
+          <span class="fx-badge fx-badge-warning">warning</span>
+          <span class="fx-badge fx-badge-score" style="color: var(--green)">8/8</span>
+          
+        </div>
+        <div class="fx-audit-chevron">▾</div>
+      </div>
+      <div class="fx-audit-body">
+        
+      </div>
+    </div>
+    </section>
+    
+    <footer class="fx-footer">
+      <div class="fx-footer-text">
+        Generated by <strong>FluxAPI</strong> • 2026-02-19 • Report ID: fx_mlts3e02_qklvhx
+      </div>
+      <div class="fx-footer-links">
+        <a href="https://fluxapi.dev" target="_blank">fluxapi.dev</a> •
+        <a href="https://github.com/fluxapi/scan" target="_blank">GitHub</a>
+      </div>
+    </footer>
+  </div>
+  <script>
+    // Animate score counter
+    document.querySelectorAll('.fx-gauge-number').forEach(el => {
+      const target = parseFloat(el.dataset.target || '0');
+      const color = target >= 90 ? 'var(--green)' : target >= 70 ? 'var(--blue)' : target >= 50 ? 'var(--orange)' : 'var(--red)';
+      el.style.color = color;
+      let current = 0;
+      const step = target / 40;
+      const timer = setInterval(() => {
+        current += step;
+        if (current >= target) { current = target; clearInterval(timer); }
+        el.textContent = Math.round(current);
+      }, 25);
+    });
+
+    // Copy to clipboard
+    window.fxCopy = function(btn) {
+      const code = btn.closest('.fx-code-block').querySelector('code');
+      if (!code) return;
+      navigator.clipboard.writeText(code.textContent || '').then(() => {
+        btn.classList.add('fx-copied');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Copied!';
+        setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('fx-copied'); }, 2000);
+      });
+    };
+
+    // Auto-expand first failing audit
+    const firstFail = document.querySelector('.fx-audit-fail');
+    if (firstFail) firstFail.classList.add('fx-expanded');
+  </script>
+</body>
+</html>

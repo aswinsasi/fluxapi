@@ -1,7 +1,9 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/cli.ts'],
+  entry: { cli: 'src/cli.ts' },
   format: ['cjs'],
   clean: true,
+  noExternal: ['@fluxiapi/scan'],
+  outExtension: () => ({ js: '.js' }),
 });

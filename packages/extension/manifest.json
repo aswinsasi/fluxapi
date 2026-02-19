@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "FluxAPI — API Health Scanner",
-  "version": "0.1.0",
-  "description": "Lighthouse for your API calls. Detects request waterfalls, duplicate fetches, N+1 patterns, caching issues.",
+  "version": "0.3.0",
+  "description": "Lighthouse for your API calls. 13 audit rules detect waterfalls, duplicates, N+1, caching issues, polling waste, missing compression & more.",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",

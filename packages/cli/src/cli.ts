@@ -139,11 +139,30 @@ USE CASES
   Compare networks         Run twice: -n wifi vs -n bsnl-2g, compare reports
 
 DETECTS
-  E1  Request Waterfalls   Sequential calls that could be parallel
-  E2  Duplicate Requests   Same endpoint hit from multiple components
-  E3  N+1 Pattern          GET /items/1, /items/2 ... x25
-  C1  No Cache Strategy    Missing Cache-Control, ETag, staleTime
-  C2  Under-Caching        Near-identical responses not cached
+  ⚡ Efficiency
+  E1  Request Waterfalls       Sequential calls that could be parallel
+  E2  Duplicate Requests       Same endpoint hit from multiple components
+  E3  N+1 Pattern              GET /items/1, /items/2 ... x25
+  E4  Payload Over-fetching    Responses with unused fields (>60% waste)
+  E5  Batchable Requests       Multiple calls to same service in tight window
+
+  💾 Caching
+  C1  No Cache Strategy        Missing Cache-Control, ETag, staleTime
+  C2  Under-Caching            Near-identical responses not cached
+  C3  Over-Caching             Cache TTL longer than data change rate
+  C4  Missing Revalidation     Full refetch when 304 would work
+
+  🔄 Patterns
+  P1  Missing Prefetch         Predictable navigations with no prefetch
+  P2  Unnecessary Polling      Polling faster than data changes
+  P3  Missing Error Recovery   Failed requests with no retry logic
+  P4  Uncompressed Responses   JSON without gzip/brotli compression
+
+INTELLIGENCE
+  Framework Detection    Auto-detects React, Next.js, Vue, Nuxt, Angular, Svelte
+  GraphQL Dedup          Detects duplicate GraphQL operations by query + variables
+  WebSocket Monitor      Tracks WS connections, message rates, subscriptions
+  Smart Fixes            Fix code adapts to your stack (TanStack/SWR/Apollo/Vue/Angular)
 
 SCORING
   90-100  🟢 Excellent — API layer is well optimized
@@ -410,7 +429,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   if (args.version) {
-    console.log('flux-scan v0.1.0');
+    console.log('flux-scan v0.3.0');
     process.exit(0);
   }
 
