@@ -58,8 +58,16 @@ const FIX_GENERATORS: Partial<Record<RuleId, FixGenerator>> = {
   E1: fixWaterfall,
   E2: fixDuplicates,
   E3: fixNPlus1,
+  E4: fixOverfetching,
+  E5: fixBatchable,
   C1: fixNoCache,
   C2: fixUnderCaching,
+  C3: fixOverCaching,
+  C4: fixMissingRevalidation,
+  P1: fixMissingPrefetch,
+  P2: fixUnnecessaryPolling,
+  P3: fixMissingRecovery,
+  P4: fixUncompressed,
 };
 
 // ─── E1: Waterfall → Promise.all ────────────────────────────────
@@ -403,6 +411,388 @@ export function ${hookName}() {
     alternativeCode: null,
     suggestedFilename: `hooks/${hookName}.ts`,
     dependencies: ['@tanstack/react-query'],
+  };
+}
+
+// ─── E4: Over-fetching → Field selection ─────────────────────
+
+function fixOverfetching(v: RuleViolation): CodeFix {
+  const endpoint = v.affectedEndpoints[0] || '/api/data';
+  const totalFields = v.metadata.avgFieldCount || 50;
+  const bodyKB = Math.round((v.metadata.avgResponseSize || 10240) / 1024);
+  const resource = endpoint.split('/').pop() || 'data';
+
+  const code = `// ✅ FIX: Reduce payload — only subset of ${totalFields} fields is used
+// Before: GET ${endpoint} → ${bodyKB}KB (${totalFields} fields)
+// After:  Sparse fieldset or lightweight endpoint
+
+// Option A: Sparse fieldsets (if API supports it)
+const res = await fetch('${endpoint}?fields=id,name,email,status');
+
+// Option B: GraphQL query (return only what you need)
+const QUERY = \`query { ${resource} { id name email status } }\`;
+
+// Option C: Create a dedicated lightweight endpoint
+// Backend: GET ${endpoint}/summary → returns only needed fields
+// Express:
+//   app.get('${endpoint}/summary', (req, res) => {
+//     const full = await getData();
+//     res.json({ id: full.id, name: full.name, email: full.email });
+//   });`;
+
+  return {
+    ruleId: 'E4',
+    title: `Reduce ${endpoint} payload (~${totalFields} fields)`,
+    explanation:
+      `"${endpoint}" returns ~${bodyKB}KB with ~${totalFields} fields per response. ` +
+      `If your app only uses a handful of these fields, the rest is wasted bandwidth and parse time. ` +
+      `Use sparse fieldsets, GraphQL, or a dedicated summary endpoint.`,
+    code, language: 'typescript', alternativeCode: null,
+    suggestedFilename: `api/${resource}.ts`, dependencies: [],
+  };
+}
+
+// ─── E5: Batchable → Batch endpoint ─────────────────────────
+
+function fixBatchable(v: RuleViolation): CodeFix {
+  const endpoints = v.affectedEndpoints || [];
+  const host = v.metadata.host || 'api';
+  const count = v.metadata.requestCount || endpoints.length;
+
+  const code = `// ✅ FIX: Batch ${count} requests to ${host} into a single call
+// Before: ${count} separate requests
+// After:  1 batch request
+// Saves:  ~${Math.round(v.impact.timeSavedMs)}ms, ${v.impact.requestsEliminated} fewer requests
+
+// Option A: Batch endpoint
+const res = await fetch('/api/batch', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    requests: [
+${endpoints.slice(0, 5).map(ep => `      { method: 'GET', path: '${ep}' },`).join('\n')}
+    ]
+  })
+});
+const results = await res.json();
+
+// Option B: DataLoader pattern (auto-batches within event loop tick)
+import DataLoader from 'dataloader';
+
+const apiLoader = new DataLoader(async (paths) => {
+  const res = await fetch('/api/batch', {
+    method: 'POST',
+    body: JSON.stringify({ requests: paths.map(p => ({ method: 'GET', path: p })) })
+  });
+  return res.json();
+});
+
+// Usage: const data = await apiLoader.load('${endpoints[0] || '/api/resource'}');`;
+
+  return {
+    ruleId: 'E5',
+    title: `Batch ${count} requests to ${host}`,
+    explanation:
+      `${count} separate requests fire to "${host}" within a tight window. ` +
+      `A batch endpoint combines them into one network round-trip, reducing overhead.`,
+    code, language: 'typescript', alternativeCode: null,
+    suggestedFilename: `api/batch.ts`, dependencies: [],
+  };
+}
+
+// ─── C3: Over-Caching → Reduce TTL ─────────────────────────
+
+function fixOverCaching(v: RuleViolation): CodeFix {
+  const endpoint = v.affectedEndpoints[0] || '/api/data';
+  const hookName = `use${endpointToHookName(endpoint).replace(/^get/, '')}`;
+  const keyName = endpointToKey(endpoint);
+  const cacheSecs = Math.round((v.metadata.cacheTtlMs || 600000) / 1000);
+  const changeSecs = Math.round((v.metadata.observedChangeIntervalMs || 60000) / 1000);
+  const recommendedSecs = Math.max(Math.round(changeSecs * 0.5), 5);
+
+  const code = `// ✅ FIX: Reduce cache TTL — data changes faster than cache expires
+// Before: max-age=${cacheSecs}s, but data changes every ~${changeSecs}s
+// After:  max-age=${recommendedSecs}s + stale-while-revalidate
+// Risk:   Users were seeing stale data ~${v.metadata.staleDataRisk ? Math.round(v.metadata.staleDataRisk * 100) : '?'}% of the time
+
+import { useQuery } from '@tanstack/react-query';
+
+export function ${hookName}() {
+  return useQuery({
+    queryKey: ['${keyName}'],
+    queryFn: () => fetch('${endpoint}').then(r => r.json()),
+    staleTime: ${recommendedSecs * 1000}, // ${recommendedSecs}s — matches change rate
+    refetchOnWindowFocus: true,
+  });
+}
+
+// Backend: Add stale-while-revalidate
+// Cache-Control: max-age=${recommendedSecs}, stale-while-revalidate=30`;
+
+  return {
+    ruleId: 'C3',
+    title: `Reduce cache TTL for ${endpoint} (${cacheSecs}s → ${recommendedSecs}s)`,
+    explanation:
+      `Cache TTL (${cacheSecs}s) is much longer than data change interval (~${changeSecs}s). ` +
+      `Reduce to ${recommendedSecs}s and use stale-while-revalidate for seamless background updates.`,
+    code, language: 'tsx', alternativeCode: null,
+    suggestedFilename: `hooks/${hookName}.ts`, dependencies: ['@tanstack/react-query'],
+  };
+}
+
+// ─── C4: Missing Revalidation → Conditional requests ────────
+
+function fixMissingRevalidation(v: RuleViolation): CodeFix {
+  const endpoint = v.affectedEndpoints[0] || '/api/data';
+  const hookName = `use${endpointToHookName(endpoint).replace(/^get/, '')}`;
+  const keyName = endpointToKey(endpoint);
+  const avgSize = Math.round((v.metadata.avgResponseSize || 5120) / 1024);
+
+  const code = `// ✅ FIX: Use conditional requests (ETag / If-Modified-Since)
+// Before: Full ${avgSize}KB download every time
+// After:  304 Not Modified (~0.2KB) when data hasn't changed
+
+import { useQuery } from '@tanstack/react-query';
+
+let lastEtag = '';
+
+export function ${hookName}() {
+  return useQuery({
+    queryKey: ['${keyName}'],
+    queryFn: async () => {
+      const headers: Record<string, string> = {};
+      if (lastEtag) headers['If-None-Match'] = lastEtag;
+
+      const res = await fetch('${endpoint}', { headers });
+
+      if (res.status === 304) {
+        return undefined; // TanStack Query keeps previous data
+      }
+
+      lastEtag = res.headers.get('ETag') || '';
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+}
+
+// Backend must return ETag or Last-Modified headers:
+// Express:
+//   const etag = crypto.createHash('md5').update(JSON.stringify(data)).digest('hex');
+//   res.set('ETag', \`"\${etag}"\`);
+//
+// Laravel:
+//   return response()->json($data)->header('ETag', '"'.md5(json_encode($data)).'"');`;
+
+  return {
+    ruleId: 'C4',
+    title: `Add ETag revalidation for ${endpoint}`,
+    explanation:
+      `"${endpoint}" returns ETag/Last-Modified but the client never sends conditional headers. ` +
+      `This means full ${avgSize}KB responses even when data hasn't changed. ` +
+      `Conditional requests would return 304 (~200 bytes) for unchanged data.`,
+    code, language: 'tsx', alternativeCode: null,
+    suggestedFilename: `hooks/${hookName}.ts`, dependencies: ['@tanstack/react-query'],
+  };
+}
+
+// ─── P1: Missing Prefetch → prefetchQuery ───────────────────
+
+function fixMissingPrefetch(v: RuleViolation): CodeFix {
+  const fromRoute = v.metadata.fromRoute || '/dashboard';
+  const toRoute = v.metadata.toRoute || '/orders';
+  const probability = v.metadata.probability || 0.85;
+  const endpoints = v.metadata.prefetchEndpoints || v.affectedEndpoints || ['/api/orders'];
+  const savingsMs = Math.round(v.impact.timeSavedMs);
+
+  const code = `// ✅ FIX: Prefetch data for likely next navigation
+// ${Math.round(probability * 100)}% of users navigate ${fromRoute} → ${toRoute}
+// Prefetching saves ~${savingsMs}ms on navigation
+
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
+
+function usePrefetch${capitalize(toRoute.split('/').pop() || 'Next')}() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+${endpoints.map((ep: string) => `    queryClient.prefetchQuery({
+      queryKey: ['${endpointToKey(ep)}'],
+      queryFn: () => fetch('${ep}').then(r => r.json()),
+      staleTime: 60_000,
+    });`).join('\n')}
+  }, [queryClient]);
+}
+
+// Use in the source page component:
+// function DashboardPage() {
+//   usePrefetch${capitalize(toRoute.split('/').pop() || 'Next')}(); // Starts prefetching
+//   return <Dashboard />;
+// }
+
+// Alternative: prefetch on hover
+// <Link to="${toRoute}" onMouseEnter={() => queryClient.prefetchQuery({...})}>`;
+
+  return {
+    ruleId: 'P1',
+    title: `Prefetch ${toRoute} data from ${fromRoute} (${Math.round(probability * 100)}% nav probability)`,
+    explanation:
+      `${Math.round(probability * 100)}% of users navigate from ${fromRoute} to ${toRoute}. ` +
+      `The destination page makes API calls that take ~${savingsMs}ms. ` +
+      `Prefetching this data while the user is still on ${fromRoute} eliminates the wait.`,
+    code, language: 'tsx', alternativeCode: null,
+    suggestedFilename: `hooks/usePrefetch.ts`, dependencies: ['@tanstack/react-query'],
+  };
+}
+
+// ─── P2: Unnecessary Polling → Reduce interval / SSE ────────
+
+function fixUnnecessaryPolling(v: RuleViolation): CodeFix {
+  const endpoint = v.affectedEndpoints[0] || '/api/data';
+  const hookName = `use${endpointToHookName(endpoint).replace(/^get/, '')}`;
+  const keyName = endpointToKey(endpoint);
+  const currentIntervalMs = v.metadata.pollingIntervalMs || 2000;
+  const changeRate = v.metadata.identicalResponseRate || 0.95;
+  const recommendedMs = v.metadata.recommendedIntervalMs || 60000;
+
+  const code = `// ✅ FIX: Reduce polling frequency — ${Math.round(changeRate * 100)}% of polls return identical data
+// Before: refetchInterval: ${currentIntervalMs}ms (${Math.round(changeRate * 100)}% wasted)
+// After:  refetchInterval: ${recommendedMs}ms or WebSocket/SSE
+
+import { useQuery } from '@tanstack/react-query';
+
+// Option A: Reduced polling (simple)
+export function ${hookName}() {
+  return useQuery({
+    queryKey: ['${keyName}'],
+    queryFn: () => fetch('${endpoint}').then(r => r.json()),
+    refetchInterval: ${recommendedMs}, // ${Math.round(recommendedMs / 1000)}s instead of ${Math.round(currentIntervalMs / 1000)}s
+    refetchIntervalInBackground: false, // Don't poll when tab is hidden
+  });
+}
+
+// Option B: Server-Sent Events (real-time without polling)
+// function ${hookName}SSE() {
+//   const [data, setData] = useState(null);
+//   useEffect(() => {
+//     const es = new EventSource('${endpoint}/stream');
+//     es.onmessage = (e) => setData(JSON.parse(e.data));
+//     return () => es.close();
+//   }, []);
+//   return data;
+// }`;
+
+  return {
+    ruleId: 'P2',
+    title: `Reduce polling for ${endpoint} (${Math.round(changeRate * 100)}% wasted)`,
+    explanation:
+      `"${endpoint}" is polled every ${Math.round(currentIntervalMs / 1000)}s but ` +
+      `${Math.round(changeRate * 100)}% of responses are identical. ` +
+      `Increase interval to ${Math.round(recommendedMs / 1000)}s or switch to SSE/WebSocket.`,
+    code, language: 'tsx', alternativeCode: null,
+    suggestedFilename: `hooks/${hookName}.ts`, dependencies: ['@tanstack/react-query'],
+  };
+}
+
+// ─── P3: Missing Error Recovery → Retry config ──────────────
+
+function fixMissingRecovery(v: RuleViolation): CodeFix {
+  const endpoint = v.affectedEndpoints[0] || '/api/data';
+  const hookName = `use${endpointToHookName(endpoint).replace(/^get/, '')}`;
+  const keyName = endpointToKey(endpoint);
+  const failCount = v.metadata.failedRequestCount || 1;
+  const statusCodes = v.metadata.statusCodes || [500];
+
+  const code = `// ✅ FIX: Add retry + error recovery for ${endpoint}
+// ${failCount} failed request(s) with no retry detected (status: ${statusCodes.join(', ')})
+
+import { useQuery } from '@tanstack/react-query';
+
+export function ${hookName}() {
+  return useQuery({
+    queryKey: ['${keyName}'],
+    queryFn: async () => {
+      const res = await fetch('${endpoint}');
+      if (!res.ok) throw new Error(\`\${res.status}: \${res.statusText}\`);
+      return res.json();
+    },
+    // ✅ Retry configuration
+    retry: 3,
+    retryDelay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 30000),
+    // ✅ Keep showing stale data while retrying
+    placeholderData: (previousData) => previousData,
+    // ✅ Don't retry on 4xx (client errors)
+    retryOnMount: true,
+    meta: { errorHandler: 'toast' },
+  });
+}
+
+// For mutations, use onError callback:
+// const mutation = useMutation({
+//   mutationFn: (data) => fetch('${endpoint}', { method: 'POST', body: JSON.stringify(data) }),
+//   retry: 2,
+//   onError: (error) => toast.error('Failed: ' + error.message),
+// });`;
+
+  return {
+    ruleId: 'P3',
+    title: `Add retry logic for ${endpoint} (${failCount} unrecovered failures)`,
+    explanation:
+      `${failCount} request(s) to "${endpoint}" failed (${statusCodes.join(', ')}) with no retry attempt. ` +
+      `Adding exponential backoff retry prevents intermittent failures from breaking the UI.`,
+    code, language: 'tsx', alternativeCode: null,
+    suggestedFilename: `hooks/${hookName}.ts`, dependencies: ['@tanstack/react-query'],
+  };
+}
+
+// ─── P4: Uncompressed → Enable compression ──────────────────
+
+function fixUncompressed(v: RuleViolation): CodeFix {
+  const endpoints = v.affectedEndpoints || ['/api/data'];
+  const totalWasted = Math.round((v.impact.bandwidthSavedBytes || 0) / 1024);
+  const count = v.metadata.endpointCount || endpoints.length;
+
+  const code = `// ✅ FIX: Enable compression — ${count} endpoints sending uncompressed responses
+// Estimated savings: ~${totalWasted}KB per page load (60-80% reduction)
+
+// ── Express.js ──
+import compression from 'compression';
+app.use(compression()); // Adds gzip/brotli to all responses
+
+// ── Nginx (recommended for production) ──
+// http {
+//   gzip on;
+//   gzip_types application/json application/javascript text/css;
+//   gzip_min_length 1024;
+//   gzip_comp_level 6;
+//
+//   # Brotli (if module installed)
+//   brotli on;
+//   brotli_types application/json application/javascript text/css;
+// }
+
+// ── Laravel ──
+// Add to app/Http/Kernel.php middleware:
+// \\Illuminate\\Http\\Middleware\\SetCacheHeaders::class,
+// Or use nginx-level compression (preferred)
+
+// ── Next.js ──
+// next.config.js: { compress: true } // enabled by default
+
+// ── Client-side: Ensure Accept-Encoding header ──
+// fetch('${endpoints[0]}', {
+//   headers: { 'Accept-Encoding': 'gzip, deflate, br' }
+// });`;
+
+  return {
+    ruleId: 'P4',
+    title: `Enable compression for ${count} endpoint(s) (~${totalWasted}KB savings)`,
+    explanation:
+      `${count} API endpoints return uncompressed JSON responses. ` +
+      `Enabling gzip/brotli compression typically reduces payload size by 60-80%, ` +
+      `saving ~${totalWasted}KB per page load. This is a server-side configuration change.`,
+    code, language: 'typescript', alternativeCode: null,
+    suggestedFilename: `server/compression.ts`, dependencies: ['compression'],
   };
 }
 

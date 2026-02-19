@@ -3,7 +3,25 @@
 // Self-contained: uses chrome.devtools.network API only
 // ═══════════════════════════════════════════════════════════════
 
-var scanning = false, scanStart = 0, requests = [], timer = null, report = null;
+var scanning = false, scanStart = 0, requests = [], timer = null, report = null, pageUrl = '';
+
+// Rule ID → Human-readable name
+var RULE_NAMES = {
+  E1: 'Request Waterfall',
+  E2: 'Duplicate Requests',
+  E3: 'N+1 Pattern',
+  E4: 'Payload Over-fetching',
+  E5: 'Batchable Requests',
+  C1: 'No Cache Strategy',
+  C2: 'Under-Caching',
+  C3: 'Over-Caching',
+  C4: 'Missing Revalidation',
+  P1: 'Missing Prefetch',
+  P2: 'Unnecessary Polling',
+  P3: 'Missing Error Recovery',
+  P4: 'Uncompressed Responses',
+};
+function ruleName(id) { return RULE_NAMES[id] || id; }
 
 // Wire everything after DOM is ready
 window.onload = function() {
@@ -48,7 +66,12 @@ window.onload = function() {
 function toggleScan() { scanning ? stopScan() : startScan(); }
 
 function startScan() {
-  scanning = true; scanStart = Date.now(); requests = []; report = null;
+  scanning = true; scanStart = Date.now(); requests = []; report = null; pageUrl = '';
+
+  // Capture the inspected page URL
+  chrome.devtools.inspectedWindow.eval('window.location.href', function(result) {
+    if (result) pageUrl = result;
+  });
 
   var btn = document.getElementById('scanBtn');
   btn.className = 'scan-btn stop'; btn.textContent = '■ STOP';
@@ -239,7 +262,7 @@ function analyze() {
     summary: { criticalCount: crits, warningCount: warns, infoCount: infos, totalViolations: violations.length },
     requests: requests,
     apiRequests: apiReqs,
-    metadata: { totalRequests: requests.length, apiRequests: apiReqs.length, duration: Math.round((Date.now() - scanStart) / 1000) },
+    metadata: { totalRequests: requests.length, apiRequests: apiReqs.length, duration: Math.round((Date.now() - scanStart) / 1000), pageUrl: pageUrl },
   };
 
   renderResults();
@@ -314,6 +337,7 @@ function renderOverview() {
   h += '<div class="score-row">';
   h += '<div class="score-gauge"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="40"/><circle class="value" cx="50" cy="50" r="40" stroke-dasharray="' + dash + ' 251" style="stroke:' + color + '"/></svg><div class="num"><span class="n" style="color:' + color + '">' + s.overall + '</span><span class="g" style="color:' + color + '">' + s.grade + '</span></div></div>';
   h += '<div class="score-details"><h3>API Health Score</h3><div style="font-size:11px;color:var(--fg3)">' + r.metadata.apiRequests + ' API calls captured in ' + r.metadata.duration + 's</div>';
+  if (r.metadata.pageUrl) h += '<div style="font-size:11px;color:var(--accent);margin-top:4px;word-break:break-all">📍 ' + esc(r.metadata.pageUrl) + '</div>';
   h += '<div class="stat-grid">';
   h += '<div class="stat-card red"><div class="num">' + r.summary.criticalCount + '</div><div class="label">Critical</div></div>';
   h += '<div class="stat-card orange"><div class="num">' + r.summary.warningCount + '</div><div class="label">Warnings</div></div>';
@@ -349,7 +373,8 @@ function renderOverview() {
     r.violations.slice(0, 3).forEach(function(v) {
       h += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:11px">';
       h += '<span class="v-sev ' + v.severity + '" style="width:5px;height:5px"></span>';
-      h += '<span style="color:var(--fg3);font-family:var(--mono);font-size:10px;width:20px">' + v.ruleId + '</span>';
+      h += '<span style="color:var(--fg3);font-family:var(--mono);font-size:10px;min-width:20px">' + v.ruleId + '</span>';
+      h += '<span style="color:var(--fg3);font-size:10px">' + ruleName(v.ruleId) + '</span>';
       h += '<span style="flex:1">' + esc(v.title) + '</span>';
       if (v.impact.timeSavedMs > 0) h += '<span style="color:var(--blue);font-size:10px">⚡' + fmtMs(v.impact.timeSavedMs) + '</span>';
       h += '</div>';
@@ -370,7 +395,7 @@ function renderViolations() {
       h += '<div class="v-card" id="vc' + i + '">';
       h += '<div class="v-head" data-toggle="vc' + i + '">';
       h += '<span class="v-sev ' + v.severity + '"></span>';
-      h += '<span class="v-rule">' + v.ruleId + '</span>';
+      h += '<span class="v-rule">' + v.ruleId + ': ' + ruleName(v.ruleId) + '</span>';
       h += '<span class="v-title">' + esc(v.title) + '</span>';
       h += '<div class="v-pills">';
       if (v.impact.timeSavedMs > 0) h += '<span class="v-pill time">⚡' + fmtMs(v.impact.timeSavedMs) + '</span>';
@@ -502,6 +527,7 @@ function doExportHtml() {
 
   // Header
   html += '<h1><svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#7c6afc"/><path d="M8 10h16M8 16h12M8 22h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg> FluxAPI Report</h1>';
+  if (m.pageUrl) html += '<div style="font-size:13px;color:#7c6afc;margin-bottom:4px;word-break:break-all">📍 ' + esc(m.pageUrl) + '</div>';
   html += '<div class="sub">' + ts + ' · ' + m.apiRequests + ' API calls · ' + m.duration + 's scan · Network: ' + esc(net) + '</div>';
 
   // Score + gauge
@@ -530,7 +556,7 @@ function doExportHtml() {
   if (v.length > 0) {
     html += '<div class="section">Issues Found (' + v.length + ')</div>';
     v.forEach(function(vi) {
-      html += '<div class="card"><div class="card-head"><span class="sev sev-' + vi.severity.charAt(0) + '"></span><span class="rule">' + vi.ruleId + '</span><span class="title">' + esc(vi.title) + '</span></div>';
+      html += '<div class="card"><div class="card-head"><span class="sev sev-' + vi.severity.charAt(0) + '"></span><span class="rule">' + vi.ruleId + ': ' + ruleName(vi.ruleId) + '</span><span class="title">' + esc(vi.title) + '</span></div>';
       html += '<div class="pills">';
       if (vi.impact.timeSavedMs > 0) html += '<span class="pill">⚡ ' + fmtMs(vi.impact.timeSavedMs) + ' faster</span>';
       if (vi.impact.requestsEliminated > 0) html += '<span class="pill">📉 ' + vi.impact.requestsEliminated + ' fewer</span>';

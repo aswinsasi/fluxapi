@@ -281,6 +281,7 @@ function renderViolation(v: RuleViolation, index: number, opts: ReportOptions): 
     <div class="fx-violation">
       <div class="fx-violation-header">
         <span class="fx-severity-dot fx-severity-${v.severity}"></span>
+        <span class="fx-badge fx-badge-${v.severity}" style="font-family:monospace;font-size:10px">${escHtml(v.ruleId)}</span>
         <span class="fx-violation-title">${escHtml(v.title)}</span>
       </div>
       <div class="fx-violation-desc">${escHtml(v.description)}</div>

@@ -26,8 +26,16 @@ import { calculateScore, calculateTotalImpact, generateSummary } from './scorer'
 import { createE1Rule } from './rules/e1-waterfall';
 import { createE2Rule } from './rules/e2-duplicates';
 import { createE3Rule } from './rules/e3-nplus1';
+import { createE4Rule } from './rules/e4-overfetching';
+import { createE5Rule } from './rules/e5-batchable';
 import { createC1Rule } from './rules/c1-no-cache';
 import { createC2Rule } from './rules/c2-under-caching';
+import { createC3Rule } from './rules/c3-over-caching';
+import { createC4Rule } from './rules/c4-missing-revalidation';
+import { createP1Rule } from './rules/p1-missing-prefetch';
+import { createP2Rule } from './rules/p2-unnecessary-polling';
+import { createP3Rule } from './rules/p3-missing-recovery';
+import { createP4Rule } from './rules/p4-uncompressed';
 
 // ─── FluxAnalyzer ───────────────────────────────────────────────
 
@@ -141,18 +149,16 @@ export class FluxAnalyzer {
     rules.set('E1', createE1Rule(rc.E1));
     rules.set('E2', createE2Rule(rc.E2));
     rules.set('E3', createE3Rule(rc.E3));
+    rules.set('E4', createE4Rule(rc.E4));
+    rules.set('E5', createE5Rule(rc.E5));
     rules.set('C1', createC1Rule(rc.C1));
     rules.set('C2', createC2Rule(rc.C2));
-
-    // Week 3+ rules would be added here:
-    // rules.set('E4', createE4Rule(rc.E4));
-    // rules.set('E5', createE5Rule(rc.E5));
-    // rules.set('C3', createC3Rule(rc.C3));
-    // rules.set('C4', createC4Rule(rc.C4));
-    // rules.set('P1', createP1Rule(rc.P1));
-    // rules.set('P2', createP2Rule(rc.P2));
-    // rules.set('P3', createP3Rule(rc.P3));
-    // rules.set('P4', createP4Rule(rc.P4));
+    rules.set('C3', createC3Rule(rc.C3));
+    rules.set('C4', createC4Rule(rc.C4));
+    rules.set('P1', createP1Rule(rc.P1));
+    rules.set('P2', createP2Rule(rc.P2));
+    rules.set('P3', createP3Rule(rc.P3));
+    rules.set('P4', createP4Rule(rc.P4));
 
     return rules;
   }

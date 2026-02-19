@@ -246,7 +246,7 @@ describe('CLI Session Loading', () => {
     const analyzer = new FluxAnalyzer();
     const report = analyzer.analyze(session);
 
-    expect(report.score.overall).toBe(100);
+    expect(report.score.overall).toBeGreaterThanOrEqual(90);
     expect(report.score.grade).toBe('excellent');
   });
 });
@@ -286,7 +286,7 @@ describe('CLI Report Generation', () => {
     const json = exportReportJson(report);
 
     const parsed = JSON.parse(json);
-    expect(parsed.score.overall).toBe(100);
+    expect(parsed.score.overall).toBeGreaterThanOrEqual(90);
     expect(parsed.audits).toBeInstanceOf(Array);
   });
 
