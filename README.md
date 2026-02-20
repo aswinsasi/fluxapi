@@ -288,7 +288,7 @@ const html = generateHtmlReport(report);
 ## GitHub Action
 
 ```yaml
-- uses: AswanthManoj/fluxapi-scan-action@v1
+- uses: aswinsasi/fluxapi-scan-action@v1
   with:
     url: https://staging.your-app.com
     threshold: 70

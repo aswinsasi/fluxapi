@@ -169,7 +169,7 @@ Lighthouse for your API calls. Scans your web app and fails CI if API health sco
 ## Usage
 
 ```yaml
-- uses: AswanthManoj/@fluxiapi/scan-action@v1
+- uses: aswinsasi/@fluxiapi/scan-action@v1
   with:
     url: https://staging.your-app.com
     threshold: 70
@@ -183,16 +183,16 @@ git add .
 git commit -m "feat: FluxAPI scan GitHub Action v1"
 ```
 
-Push to GitHub as `AswanthManoj/@fluxiapi/scan-action`, then tag it:
+Push to GitHub as `aswinsasi/@fluxiapi/scan-action`, then tag it:
 
 ```bash
-git remote add origin https://github.com/AswanthManoj/@fluxiapi/scan-action.git
+git remote add origin https://github.com/aswinsasi/@fluxiapi/scan-action.git
 git push -u origin main
 git tag -a v1 -m "v1.0.0"
 git push origin v1
 ```
 
-Now anyone can use: `uses: AswanthManoj/@fluxiapi/scan-action@v1`
+Now anyone can use: `uses: aswinsasi/@fluxiapi/scan-action@v1`
 
 ---
 
@@ -264,7 +264,7 @@ After setup, these will be your links:
 | npm: @fluxiapi/scan | https://www.npmjs.com/package/@fluxiapi/scan |
 | npm: @fluxiapi/cli | https://www.npmjs.com/package/@fluxiapi/cli |
 | Landing Page | https://fluxapi.vercel.app (or fluxapi.dev) |
-| GitHub Action | https://github.com/AswanthManoj/@fluxiapi/scan-action |
+| GitHub Action | https://github.com/aswinsasi/@fluxiapi/scan-action |
 
 ---
 
