@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FluxAPI — Lighthouse for Your API Calls</title>
-<meta name="description" content="Find request waterfalls, duplicate fetches, N+1 patterns, and missing cache in your web app. Auto-detects React, Vue, Next.js, Nuxt, Angular. Generates framework-aware fix code.">
+<meta name="description" content="Find request waterfalls, duplicate fetches, N+1 patterns, and missing cache. Drop-in DevTools for Vue & React. Auto-detects your stack and generates framework-aware fix code.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -73,7 +73,7 @@ h1 .gradient{
   background:linear-gradient(135deg,var(--accent2),var(--cyan),var(--green));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
-.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--fg2);max-width:540px;font-weight:300;line-height:1.5;margin-bottom:36px}
+.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--fg2);max-width:580px;font-weight:300;line-height:1.5;margin-bottom:36px}
 .hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 
 .btn-primary{
@@ -117,15 +117,12 @@ h1 .gradient{
 .terminal-body .accent{color:var(--accent2)}
 .terminal-body .dim{color:var(--fg3)}
 
-.type-cursor{display:inline-block;width:8px;height:16px;background:var(--fg);animation:cursor-blink 1s step-end infinite;vertical-align:middle;margin-left:2px}
-@keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
-
-/* ═══════════ WHAT IT FINDS (Feature Grid) ═══════════ */
+/* ═══════════ SECTIONS ═══════════ */
 .section{padding:100px 24px}
 .section-title{
   font-size:clamp(28px,4vw,44px);font-weight:900;letter-spacing:-1.5px;text-align:center;margin-bottom:12px;
 }
-.section-sub{text-align:center;color:var(--fg2);font-size:16px;max-width:500px;margin:0 auto 48px;font-weight:300}
+.section-sub{text-align:center;color:var(--fg2);font-size:16px;max-width:540px;margin:0 auto 48px;font-weight:300}
 
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;max-width:960px;margin:0 auto}
 .card{
@@ -149,6 +146,7 @@ h1 .gradient{
 .card-badge.warn{background:rgba(251,191,36,0.12);color:var(--orange)}
 .card-badge.fix{background:rgba(52,211,153,0.12);color:var(--green)}
 .card-badge.info{background:rgba(96,165,250,0.12);color:#60a5fa}
+.card-badge.new{background:rgba(124,92,252,0.15);color:var(--accent2)}
 
 /* ═══════════ HOW IT WORKS ═══════════ */
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px;max-width:900px;margin:0 auto}
@@ -161,7 +159,7 @@ h1 .gradient{
 .step-title{font-size:15px;font-weight:700;margin-bottom:6px}
 .step-desc{font-size:13px;color:var(--fg2)}
 
-/* ═══════════ CODE SAMPLE ═══════════ */
+/* ═══════════ CODE BLOCKS ═══════════ */
 .code-section{max-width:720px;margin:0 auto}
 .code-block{
   background:#0c0c18;border:1px solid var(--border);border-radius:10px;overflow:hidden;
@@ -179,6 +177,20 @@ h1 .gradient{
 .code-body .num{color:#d19a66}
 .code-body .op{color:#56b6c2}
 
+/* ═══════════ INSTALL TABS ═══════════ */
+.install-tabs{display:flex;gap:0;max-width:720px;margin:0 auto 0;border-radius:10px 10px 0 0;overflow:hidden;border:1px solid var(--border);border-bottom:none}
+.install-tab{
+  flex:1;padding:12px 16px;text-align:center;cursor:pointer;font-size:13px;font-weight:600;
+  background:var(--bg3);color:var(--fg3);border:none;font-family:var(--font);
+  transition:all .15s;border-right:1px solid var(--border);
+}
+.install-tab:last-child{border-right:none}
+.install-tab.active{background:var(--bg2);color:var(--accent2);border-bottom:2px solid var(--accent)}
+.install-tab:hover:not(.active){color:var(--fg2);background:rgba(255,255,255,0.02)}
+.install-tab .tab-icon{display:block;font-size:20px;margin-bottom:4px}
+.install-panel{display:none;max-width:720px;margin:0 auto}
+.install-panel.active{display:block}
+
 /* ═══════════ SCORING ═══════════ */
 .score-demo{display:flex;justify-content:center;gap:32px;flex-wrap:wrap;max-width:600px;margin:0 auto}
 .score-gauge{text-align:center}
@@ -188,6 +200,17 @@ h1 .gradient{
 .gauge-ring .value{fill:none;stroke-width:7;stroke-linecap:round;transition:stroke-dasharray 1.5s ease}
 .gauge-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900}
 .gauge-label{font-size:12px;color:var(--fg3);margin-top:6px}
+
+/* ═══════════ PACKAGES TABLE ═══════════ */
+.pkg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:900px;margin:0 auto}
+.pkg-card{
+  padding:20px;border-radius:12px;background:var(--bg2);border:1px solid var(--border);text-align:center;
+  transition:all .25s;
+}
+.pkg-card:hover{border-color:rgba(124,92,252,0.3);transform:translateY(-3px)}
+.pkg-name{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent2);margin-bottom:4px}
+.pkg-desc{font-size:11px;color:var(--fg3);margin-bottom:8px}
+.pkg-size{font-family:var(--mono);font-size:10px;color:var(--fg3);background:var(--bg3);padding:2px 8px;border-radius:4px;display:inline-block}
 
 /* ═══════════ CTA ═══════════ */
 .cta-section{
@@ -210,6 +233,9 @@ footer a{color:var(--fg3)}
   .terminal-wrapper{margin-top:32px}
   .grid{grid-template-columns:1fr}
   .score-demo{gap:20px}
+  .install-tabs{flex-wrap:wrap}
+  .install-tab{flex:1 1 45%}
+  .pkg-grid{grid-template-columns:1fr 1fr}
 }
 
 /* ═══════════ ANIMATIONS ═══════════ */
@@ -230,29 +256,30 @@ footer a{color:var(--fg3)}
   </div>
   <div class="nav-links">
     <a href="#features">Features</a>
-    <a href="#how-it-works">How it Works</a>
+    <a href="#install">Install</a>
     <a href="#use-cases">Use Cases</a>
     <a href="#scoring">Scoring</a>
+    <a href="https://www.npmjs.com/package/@fluxiapi/scan">npm</a>
     <a href="https://github.com/AswanthManoj/fluxapi">GitHub</a>
   </div>
-  <a href="#get-started" class="nav-cta">Get Started</a>
+  <a href="#install" class="nav-cta">Get Started</a>
 </nav>
 
 <!-- Hero -->
 <section class="hero">
   <div class="hero-badge">
     <span class="dot"></span>
-    v0.4.0 — 13 rules + WebSocket & GraphQL intelligence
+    v0.3.2 — Vue & React DevTools + 13 rules + GraphQL & WebSocket intelligence
   </div>
   <h1>
     <span class="gradient">Lighthouse</span> for<br>your API calls
   </h1>
   <p class="hero-sub">
-    Scans your web app's API layer. Finds waterfalls, duplicate fetches, N+1 patterns, and missing cache. Auto-detects your stack and generates framework-aware fix code.
+    Scans your web app's API layer. Finds waterfalls, duplicate fetches, N+1 patterns, and missing cache. Drop-in DevTools for Vue & React. Generates framework-aware fix code.
   </p>
   <div class="hero-actions">
-    <a href="#get-started" class="btn-primary">⚡ npx flux-scan</a>
-    <a href="https://github.com/aswinsasi/fluxapi" class="btn-secondary">View on GitHub →</a>
+    <a href="#install" class="btn-primary">⚡ Get Started</a>
+    <a href="https://github.com/AswanthManoj/fluxapi" class="btn-secondary">View on GitHub →</a>
   </div>
 
   <!-- Terminal Demo -->
@@ -264,7 +291,7 @@ footer a{color:var(--fg3)}
         <div class="terminal-dot g"></div>
         <span class="terminal-title">Terminal</span>
       </div>
-      <div class="terminal-body" id="terminalBody">
+      <div class="terminal-body">
         <div><span class="prompt">$</span> <span class="cmd">npx flux-scan https://myapp.com --network jio-4g</span></div>
         <div class="dim" style="margin:4px 0">
           ⠙ Scanning... [████████████████████] 30s
@@ -289,8 +316,6 @@ footer a{color:var(--fg3)}
         <div class="out">       <span class="good">⚡ 600ms faster  📉 3 fewer requests</span></div>
         <div class="out">    <span class="accent">E3:</span> N+1: 25 individual GET /products/:id</div>
         <div class="out">       <span class="good">⚡ 2.1s faster  📉 24 fewer requests</span></div>
-        <div class="out">    <span class="accent">P2:</span> Polling /api/status every 2s (95% wasted)</div>
-        <div class="out">       <span class="good">📉 28 fewer requests  💾 12KB saved</span></div>
       </div>
     </div>
   </div>
@@ -299,7 +324,7 @@ footer a{color:var(--fg3)}
 <!-- What It Finds -->
 <section class="section" id="features">
   <h2 class="section-title fade-in">What it finds</h2>
-  <p class="section-sub fade-in">13 audit rules that catch the API anti-patterns killing your app performance</p>
+  <p class="section-sub fade-in">13 audit rules catch the API anti-patterns killing your app performance</p>
 
   <div class="grid">
     <div class="card fade-in">
@@ -327,40 +352,10 @@ footer a{color:var(--fg3)}
       <span class="card-badge warn">E4 · Warning</span>
     </div>
     <div class="card fade-in">
-      <div class="card-icon">📮</div>
-      <div class="card-title">Batchable Requests</div>
-      <div class="card-desc">5 separate calls to the same service in a tight window. A single batch endpoint cuts it to 1 round-trip.</div>
-      <span class="card-badge warn">E5 · Warning</span>
-    </div>
-    <div class="card fade-in">
       <div class="card-icon">🚫</div>
       <div class="card-title">No Cache Strategy</div>
       <div class="card-desc">Endpoints with zero caching — no Cache-Control, no ETag, no staleTime. Every mount triggers a fresh network round-trip.</div>
       <span class="card-badge crit">C1 · Critical</span>
-    </div>
-    <div class="card fade-in">
-      <div class="card-icon">🔄</div>
-      <div class="card-title">Under-Caching</div>
-      <div class="card-desc">95% of fetches return identical data. Recommends optimal staleTime for your data change frequency.</div>
-      <span class="card-badge warn">C2 · Warning</span>
-    </div>
-    <div class="card fade-in">
-      <div class="card-icon">⏰</div>
-      <div class="card-title">Over-Caching</div>
-      <div class="card-desc">Cache TTL of 10 min but data changes every 30s. Users see stale data. Suggests stale-while-revalidate.</div>
-      <span class="card-badge warn">C3 · Warning</span>
-    </div>
-    <div class="card fade-in">
-      <div class="card-icon">🏷️</div>
-      <div class="card-title">Missing Revalidation</div>
-      <div class="card-desc">Server sends ETags but client ignores them. Full re-downloads when a 304 would return 200 bytes.</div>
-      <span class="card-badge info">C4 · Info</span>
-    </div>
-    <div class="card fade-in">
-      <div class="card-icon">🔮</div>
-      <div class="card-title">Missing Prefetch</div>
-      <div class="card-desc">85% of users go Dashboard → Orders. Prefetching the data while they're still on Dashboard saves 400ms.</div>
-      <span class="card-badge warn">P1 · Warning</span>
     </div>
     <div class="card fade-in">
       <div class="card-icon">🔁</div>
@@ -368,17 +363,11 @@ footer a{color:var(--fg3)}
       <div class="card-desc">Polling every 2s but data changes once a minute. 95% of polls wasted. Switch to SSE or increase interval.</div>
       <span class="card-badge warn">P2 · Warning</span>
     </div>
-    <div class="card fade-in">
-      <div class="card-icon">💔</div>
-      <div class="card-title">Missing Error Recovery</div>
-      <div class="card-desc">API returns 500 and the UI just breaks. No retry, no fallback. Adds exponential backoff config.</div>
-      <span class="card-badge info">P3 · Info</span>
-    </div>
-    <div class="card fade-in">
-      <div class="card-icon">🗜️</div>
-      <div class="card-title">Uncompressed Responses</div>
-      <div class="card-desc">JSON responses without gzip or brotli. 60-80% of bandwidth wasted. Server-side fix in one line.</div>
-      <span class="card-badge info">P4 · Info</span>
+    <div class="card fade-in" style="border-color:rgba(124,92,252,0.2);background:linear-gradient(135deg,var(--bg2),rgba(124,92,252,0.04))">
+      <div class="card-icon">🖥️</div>
+      <div class="card-title">Vue & React DevTools</div>
+      <div class="card-desc">Drop-in <code style="color:var(--accent2)">&lt;FluxDevTools /&gt;</code> component for Vue 3 and React. Floating panel with live score, violations, and request feed. Integrates with TanStack Query & SWR.</div>
+      <span class="card-badge new">New in v0.3.2</span>
     </div>
     <div class="card fade-in">
       <div class="card-icon">🔧</div>
@@ -398,13 +387,13 @@ footer a{color:var(--fg3)}
 <!-- How It Works -->
 <section class="section" id="how-it-works" style="background:var(--bg2)">
   <h2 class="section-title fade-in">Three steps. Sixty seconds.</h2>
-  <p class="section-sub fade-in">No config, no setup, no SDK integration</p>
+  <p class="section-sub fade-in">No config, no setup, no API key</p>
 
   <div class="steps">
     <div class="step fade-in">
       <div class="step-num">1</div>
       <div class="step-title">Scan</div>
-      <div class="step-desc">Run <code style="color:var(--accent2)">npx flux-scan</code> against any URL. Puppeteer opens the page and captures every API request via Chrome DevTools Protocol.</div>
+      <div class="step-desc">Run <code style="color:var(--accent2)">npx flux-scan</code> against any URL, or add <code style="color:var(--accent2)">&lt;FluxDevTools /&gt;</code> to your Vue/React app for live monitoring.</div>
     </div>
     <div class="step fade-in">
       <div class="step-num">2</div>
@@ -414,7 +403,7 @@ footer a{color:var(--fg3)}
     <div class="step fade-in">
       <div class="step-num">3</div>
       <div class="step-title">Fix</div>
-      <div class="step-desc">Each violation generates framework-aware fix code — React, Vue, Angular, SWR, Apollo. Auto-detects your stack and adapts the fix.</div>
+      <div class="step-desc">Each violation generates framework-aware fix code — React, Vue, Angular, SWR, Apollo. Copy-paste the fix and re-scan.</div>
     </div>
   </div>
 </section>
@@ -458,19 +447,36 @@ footer a{color:var(--fg3)}
   </div>
 </section>
 
-<!-- Get Started -->
-<section class="section" id="get-started" style="background:var(--bg2)">
-  <h2 class="section-title fade-in">Get started in 10 seconds</h2>
-  <p class="section-sub fade-in">No account, no API key, no install</p>
+<!-- ═══════════ INSTALLATION ═══════════ -->
+<section class="section" id="install" style="background:var(--bg2)">
+  <h2 class="section-title fade-in">Installation</h2>
+  <p class="section-sub fade-in">Choose your setup — CLI, Vue DevTools, React DevTools, or programmatic SDK</p>
 
-  <div class="code-section fade-in">
-    <div class="code-block">
+  <!-- Tabs -->
+  <div class="install-tabs fade-in">
+    <button class="install-tab active" onclick="switchTab('cli')">
+      <span class="tab-icon">💻</span>CLI
+    </button>
+    <button class="install-tab" onclick="switchTab('vue')">
+      <span class="tab-icon">💚</span>Vue
+    </button>
+    <button class="install-tab" onclick="switchTab('react')">
+      <span class="tab-icon">⚛️</span>React
+    </button>
+    <button class="install-tab" onclick="switchTab('sdk')">
+      <span class="tab-icon">📦</span>SDK
+    </button>
+  </div>
+
+  <!-- CLI Panel -->
+  <div class="install-panel active fade-in" id="panel-cli">
+    <div class="code-block" style="border-radius:0 0 10px 10px">
       <div class="code-header">
         <span class="code-lang">terminal</span>
-        <button class="code-copy" onclick="this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500);navigator.clipboard.writeText('npx flux-scan https://your-app.com -o report.html')">Copy</button>
+        <button class="code-copy" onclick="copyCode(this,'npx flux-scan https://your-app.com -o report.html')">Copy</button>
       </div>
       <div class="code-body">
-<pre><span class="cm"># Quick scan with HTML report</span>
+<pre><span class="cm"># Zero install — scan any URL, get HTML report</span>
 <span class="prompt">$</span> npx flux-scan https://your-app.com -o report.html
 
 <span class="cm"># Test with Indian mobile network scoring</span>
@@ -479,17 +485,151 @@ footer a{color:var(--fg3)}
 <span class="cm"># Authenticated apps — login manually, browse, press Enter</span>
 <span class="prompt">$</span> npx flux-scan https://admin.your-app.com --no-headless --interact
 
-<span class="cm"># Longer scan with visible browser</span>
-<span class="prompt">$</span> npx flux-scan https://your-app.com --no-headless -d 60
-
-<span class="cm"># Analyze a saved session file</span>
-<span class="prompt">$</span> npx flux-scan --session scan-data.json -o report.html
-
 <span class="cm"># JSON output for CI/CD pipelines (exit code 1 if score &lt; 50)</span>
 <span class="prompt">$</span> npx flux-scan https://staging.your-app.com -f json
 
 <span class="cm"># Stress test on slow networks</span>
 <span class="prompt">$</span> npx flux-scan https://your-app.com -n bsnl-2g -o slow-report.html</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vue Panel -->
+  <div class="install-panel" id="panel-vue">
+    <div class="code-block" style="border-radius:0 0 10px 10px">
+      <div class="code-header">
+        <span class="code-lang">vue</span>
+        <button class="code-copy" onclick="copyCode(this,'npm install @fluxiapi/vue')">Copy</button>
+      </div>
+      <div class="code-body">
+<pre><span class="cm"># Step 1: Install</span>
+<span class="prompt">$</span> npm install @fluxiapi/vue
+
+<span class="cm"># Step 2: Add one component to your App.vue</span>
+
+<span class="cm">&lt;!-- App.vue --&gt;</span>
+<span class="kw">&lt;script</span> <span class="fn">setup</span><span class="kw">&gt;</span>
+<span class="kw">import</span> { <span class="fn">FluxDevTools</span> } <span class="kw">from</span> <span class="str">'@fluxiapi/vue'</span>;
+<span class="kw">&lt;/script&gt;</span>
+
+<span class="kw">&lt;template&gt;</span>
+  <span class="op">&lt;RouterView /&gt;</span>
+  <span class="op">&lt;FluxDevTools</span> <span class="fn">force-show</span> <span class="fn">verbose</span> <span class="fn">network</span>=<span class="str">"jio-4g"</span> <span class="op">/&gt;</span>
+<span class="kw">&lt;/template&gt;</span>
+
+<span class="cm"># That's it! A floating badge appears in the corner.</span>
+<span class="cm"># Click it to expand the panel. Press Ctrl+Shift+F to toggle.</span>
+
+<span class="cm"># Optional: With TanStack Vue Query</span>
+<span class="kw">import</span> { <span class="fn">wrapQueryClient</span> } <span class="kw">from</span> <span class="str">'@fluxiapi/vue'</span>;
+<span class="kw">const</span> <span class="fn">queryClient</span> = <span class="fn">wrapQueryClient</span>(<span class="kw">new</span> <span class="fn">QueryClient</span>());
+
+<span class="cm"># Optional: Use composables for custom UI</span>
+<span class="kw">import</span> { <span class="fn">useFluxScore</span>, <span class="fn">useFluxViolations</span> } <span class="kw">from</span> <span class="str">'@fluxiapi/vue'</span>;
+<span class="kw">const</span> score = <span class="fn">useFluxScore</span>();      <span class="cm">// { overall, grade, color }</span>
+<span class="kw">const</span> violations = <span class="fn">useFluxViolations</span>(); <span class="cm">// RuleViolation[]</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- React Panel -->
+  <div class="install-panel" id="panel-react">
+    <div class="code-block" style="border-radius:0 0 10px 10px">
+      <div class="code-header">
+        <span class="code-lang">react</span>
+        <button class="code-copy" onclick="copyCode(this,'npm install @fluxiapi/react')">Copy</button>
+      </div>
+      <div class="code-body">
+<pre><span class="cm"># Step 1: Install</span>
+<span class="prompt">$</span> npm install @fluxiapi/react
+
+<span class="cm"># Step 2: Add one component to your App.tsx</span>
+
+<span class="kw">import</span> { <span class="fn">FluxDevTools</span> } <span class="kw">from</span> <span class="str">'@fluxiapi/react'</span>;
+
+<span class="kw">function</span> <span class="fn">App</span>() {
+  <span class="kw">return</span> (
+    <span class="op">&lt;&gt;</span>
+      <span class="op">&lt;YourApp /&gt;</span>
+      <span class="op">&lt;FluxDevTools</span> <span class="fn">forceShow</span> <span class="fn">verbose</span> <span class="fn">network</span>=<span class="str">"jio-4g"</span> <span class="op">/&gt;</span>
+    <span class="op">&lt;/&gt;</span>
+  );
+}
+
+<span class="cm"># That's it! Floating badge + expandable panel.</span>
+
+<span class="cm"># Optional: With TanStack Query</span>
+<span class="kw">import</span> { <span class="fn">wrapQueryClient</span> } <span class="kw">from</span> <span class="str">'@fluxiapi/react'</span>;
+<span class="kw">const</span> <span class="fn">queryClient</span> = <span class="fn">wrapQueryClient</span>(<span class="kw">new</span> <span class="fn">QueryClient</span>());
+
+<span class="cm"># Optional: With SWR</span>
+<span class="kw">import</span> { <span class="fn">fluxSWRMiddleware</span> } <span class="kw">from</span> <span class="str">'@fluxiapi/react'</span>;
+<span class="op">&lt;SWRConfig</span> <span class="fn">value</span>={{ <span class="fn">use</span>: [<span class="fn">fluxSWRMiddleware</span>] }}<span class="op">&gt;</span>
+
+<span class="cm"># Optional: Use hooks for custom UI</span>
+<span class="kw">import</span> { <span class="fn">useFluxScore</span>, <span class="fn">useFluxViolations</span> } <span class="kw">from</span> <span class="str">'@fluxiapi/react'</span>;
+<span class="kw">const</span> { overall, grade } = <span class="fn">useFluxScore</span>();</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- SDK Panel -->
+  <div class="install-panel" id="panel-sdk">
+    <div class="code-block" style="border-radius:0 0 10px 10px">
+      <div class="code-header">
+        <span class="code-lang">javascript</span>
+        <button class="code-copy" onclick="copyCode(this,'npm install @fluxiapi/scan')">Copy</button>
+      </div>
+      <div class="code-body">
+<pre><span class="cm"># Step 1: Install the core SDK</span>
+<span class="prompt">$</span> npm install @fluxiapi/scan
+
+<span class="cm"># Step 2: Use programmatically</span>
+
+<span class="kw">import</span> { <span class="fn">FluxScanner</span>, <span class="fn">FluxAnalyzer</span>, <span class="fn">generateHtmlReport</span> } <span class="kw">from</span> <span class="str">'@fluxiapi/scan'</span>;
+
+<span class="cm">// Scan</span>
+<span class="kw">const</span> scanner = <span class="kw">new</span> <span class="fn">FluxScanner</span>({ <span class="fn">duration</span>: <span class="num">60</span>, <span class="fn">network</span>: <span class="str">'jio-4g'</span> });
+scanner.<span class="fn">start</span>();
+
+<span class="cm">// ... user browses app ...</span>
+
+<span class="kw">const</span> session = scanner.<span class="fn">stop</span>();
+
+<span class="cm">// Analyze</span>
+<span class="kw">const</span> analyzer = <span class="kw">new</span> <span class="fn">FluxAnalyzer</span>({ <span class="fn">network</span>: <span class="str">'jio-4g'</span> });
+<span class="kw">const</span> report = analyzer.<span class="fn">analyze</span>(session);
+
+<span class="cm">// Output</span>
+<span class="kw">const</span> html = <span class="fn">generateHtmlReport</span>(report);
+console.<span class="fn">log</span>(report.score.overall); <span class="cm">// 38</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Packages -->
+  <div style="margin-top:48px">
+    <h3 style="text-align:center;font-size:18px;font-weight:700;margin-bottom:20px" class="fade-in">Packages</h3>
+    <div class="pkg-grid fade-in">
+      <div class="pkg-card">
+        <div class="pkg-name">@fluxiapi/scan</div>
+        <div class="pkg-desc">Core scanner + analyzer engine</div>
+        <span class="pkg-size">167 KB</span>
+      </div>
+      <div class="pkg-card">
+        <div class="pkg-name">@fluxiapi/cli</div>
+        <div class="pkg-desc">CLI tool (npx flux-scan)</div>
+        <span class="pkg-size">207 KB</span>
+      </div>
+      <div class="pkg-card" style="border-color:rgba(124,92,252,0.2)">
+        <div class="pkg-name">@fluxiapi/vue</div>
+        <div class="pkg-desc">Vue 3 DevTools + composables</div>
+        <span class="pkg-size">34 KB</span>
+      </div>
+      <div class="pkg-card" style="border-color:rgba(124,92,252,0.2)">
+        <div class="pkg-name">@fluxiapi/react</div>
+        <div class="pkg-desc">React DevTools + hooks</div>
+        <span class="pkg-size">42 KB</span>
       </div>
     </div>
   </div>
@@ -507,6 +647,11 @@ footer a{color:var(--fg3)}
       <div class="card-desc">Run before every deploy to catch API regressions. Generate an HTML report and share with your team.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://staging.app.com -o report.html</code></div>
     </div>
     <div class="card fade-in">
+      <div class="card-icon">🖥️</div>
+      <div class="card-title">Live Dev Monitoring</div>
+      <div class="card-desc">Add <code style="color:var(--accent2)">&lt;FluxDevTools /&gt;</code> to your Vue or React app. See API health scores update in real-time as you develop. Catches issues the CLI can't — like component re-mounts and user interaction patterns.</div>
+    </div>
+    <div class="card fade-in">
       <div class="card-icon">🔒</div>
       <div class="card-title">Authenticated App Scanning</div>
       <div class="card-desc">Admin panels, dashboards, apps behind login — open a visible browser, login manually, browse all pages, press Enter.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://admin.app.com --no-headless --interact</code></div>
@@ -520,11 +665,6 @@ footer a{color:var(--fg3)}
       <div class="card-icon">⚙️</div>
       <div class="card-title">CI/CD Quality Gate</div>
       <div class="card-desc">Fail the build automatically if API health drops below 50. Exit code 1 on poor scores — works with any CI system.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://staging.app.com -f json</code></div>
-    </div>
-    <div class="card fade-in">
-      <div class="card-icon">📊</div>
-      <div class="card-title">Before/After Comparison</div>
-      <div class="card-desc">Scan before your optimization, apply fixes, scan again. Compare the two HTML reports to prove your improvement.<br><code style="color:var(--accent2);font-size:11px">npx flux-scan https://app.com -o before.html</code></div>
     </div>
     <div class="card fade-in">
       <div class="card-icon">🔍</div>
@@ -568,26 +708,38 @@ footer a{color:var(--fg3)}
   <p class="fade-in">One command. Sixty seconds. Copy-paste fixes.</p>
   <div class="hero-actions fade-in">
     <a href="https://github.com/aswinsasi/fluxapi" class="btn-primary">⚡ Star on GitHub</a>
-    <a href="#get-started" class="btn-secondary">Read the Docs →</a>
+    <a href="https://www.npmjs.com/package/@fluxiapi/scan" class="btn-secondary">View on npm →</a>
   </div>
 </section>
 
 <!-- Footer -->
 <footer>
-  Built by <a href="https://github.com/aswinsasi">Aswin</a> · <a href="https://github.com/aswinsasi/fluxapi">GitHub</a> · MIT License
+  Built by <a href="https://github.com/aswinsasi">Aswin</a> · <a href="https://github.com/aswinsasi/fluxapi">GitHub</a> · <a href="https://www.npmjs.com/package/@fluxiapi/scan">npm</a> · MIT License
 </footer>
 
 <script>
 // Scroll-triggered fade-in
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-    }
+    if (entry.isIntersecting) entry.target.classList.add('visible');
   });
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-
 document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+// Install tabs
+function switchTab(name) {
+  document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.install-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`#panel-${name}`).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// Copy button
+function copyCode(btn, text) {
+  navigator.clipboard.writeText(text);
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
 </script>
 </body>
 </html>

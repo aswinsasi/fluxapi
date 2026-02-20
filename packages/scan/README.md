@@ -20,7 +20,7 @@ pnpm add @fluxiapi/scan
 - **Node.js >= 18**
 - **TypeScript >= 5.0** (if using TypeScript — types are included)
 
-> This is the **core scan engine**. For CLI usage (scan any URL from terminal), install [@fluxiapi/cli](https://www.npmjs.com/package/@fluxiapi/cli) instead or run `npx flux-scan`.
+> This is the **core scan engine**. For CLI usage (scan any URL from terminal), install [@fluxiapi/cli](https://www.npmjs.com/package/@fluxiapi/cli) instead or run `npx flux-scan`. For drop-in DevTools, see [@fluxiapi/vue](https://www.npmjs.com/package/@fluxiapi/vue) or [@fluxiapi/react](https://www.npmjs.com/package/@fluxiapi/react).
 
 ---
 
@@ -201,6 +201,16 @@ Install the [FluxAPI Chrome Extension](https://github.com/aswinsasi/fluxapi/tree
 2. Go to `chrome://extensions` → Enable Developer Mode
 3. Click "Load unpacked" → select the extension folder
 4. Open DevTools → FluxAPI tab → Start Scan
+
+---
+
+## Related Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@fluxiapi/cli`](https://www.npmjs.com/package/@fluxiapi/cli) | `npx flux-scan <url>` — scan any URL from terminal |
+| [`@fluxiapi/vue`](https://www.npmjs.com/package/@fluxiapi/vue) | `<FluxDevTools />` for Vue 3 / Nuxt — live API monitoring during development |
+| [`@fluxiapi/react`](https://www.npmjs.com/package/@fluxiapi/react) | `<FluxDevTools />` for React / Next.js — live API monitoring with TanStack Query & SWR |
 
 ---
 

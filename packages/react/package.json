@@ -1,0 +1,82 @@
+{
+  "name": "@fluxiapi/react",
+  "version": "0.3.3",
+  "description": "React DevTools for FluxAPI — live API health monitoring, TanStack Query & SWR integration",
+  "author": "Aswin <aswin@fluxapi.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aswinsasi/fluxapi.git",
+    "directory": "packages/react"
+  },
+  "homepage": "https://fluxapi.dev",
+  "bugs": {
+    "url": "https://github.com/aswinsasi/fluxapi/issues"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm test && npm run build"
+  },
+  "keywords": [
+    "fluxapi",
+    "react",
+    "devtools",
+    "api-health",
+    "tanstack-query",
+    "swr",
+    "performance",
+    "monitoring",
+    "network",
+    "lighthouse"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "swr": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@fluxiapi/scan": "^0.3.0"
+  },
+  "devDependencies": {
+    "@tanstack/react-query": "^5.62.0",
+    "@types/node": "^20.19.33",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "swr": "^2.3.3",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^1.6.1"
+  }
+}

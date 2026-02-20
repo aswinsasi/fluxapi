@@ -1,9 +1,11 @@
 # ⚡ FluxAPI — Lighthouse for Your API Calls
 
-**Scans your web app's network layer. 13 audit rules detect waterfalls, duplicate fetches, N+1 patterns, caching gaps, polling waste, and missing compression. Generates framework-aware fix code you can copy-paste.**
+**Scans your web app's network layer. 13 audit rules detect waterfalls, duplicate fetches, N+1 patterns, caching gaps, polling waste, and missing compression. Drop-in DevTools for Vue & React. Generates framework-aware fix code you can copy-paste.**
 
 [![npm version](https://img.shields.io/npm/v/@fluxiapi/scan)](https://www.npmjs.com/package/@fluxiapi/scan)
 [![npm version](https://img.shields.io/npm/v/@fluxiapi/cli)](https://www.npmjs.com/package/@fluxiapi/cli)
+[![npm version](https://img.shields.io/npm/v/@fluxiapi/vue)](https://www.npmjs.com/package/@fluxiapi/vue)
+[![npm version](https://img.shields.io/npm/v/@fluxiapi/react)](https://www.npmjs.com/package/@fluxiapi/react)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ```bash
@@ -42,7 +44,7 @@ npx flux-scan https://your-app.com -o report.html
 | **P3** | Missing Error Recovery — 500s with no retry | Exponential backoff retry | 🔵 Info |
 | **P4** | Uncompressed Responses — JSON without gzip/brotli | Server compression config | 🔵 Info |
 
-### 🧠 Intelligence (v0.4.0)
+### 🧠 Intelligence
 
 | Feature | What it Does |
 |---------|-------------|
@@ -50,8 +52,6 @@ npx flux-scan https://your-app.com -o report.html
 | **GraphQL Dedup** | Parses operations, detects duplicate queries by hash + variables |
 | **WebSocket Monitor** | Tracks WS connections, message rates, channels, subscriptions |
 | **Framework-Aware Fixes** | Generates fix code for TanStack Query, SWR, Apollo, Vue composables, Angular |
-
-Every violation generates **framework-aware fix code** — React, Vue, Angular, SWR, Apollo — that matches your detected stack.
 
 ---
 
@@ -68,15 +68,49 @@ npm install -g @fluxiapi/cli
 flux-scan https://myapp.com -o report.html
 ```
 
-**Prerequisites:** Node.js >= 18. Puppeteer (auto-installed on first run) downloads Chromium.
+### Vue DevTools — Live monitoring in Vue 3 / Nuxt apps
 
-### SDK — Integrate into your app
+```bash
+npm install @fluxiapi/vue
+```
+
+```vue
+<script setup>
+import { FluxDevTools } from '@fluxiapi/vue';
+</script>
+
+<template>
+  <RouterView />
+  <FluxDevTools />
+</template>
+```
+
+### React DevTools — Live monitoring in React / Next.js apps
+
+```bash
+npm install @fluxiapi/react
+```
+
+```jsx
+import { FluxDevTools } from '@fluxiapi/react';
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      <FluxDevTools />
+    </>
+  );
+}
+```
+
+### Programmatic SDK
 
 ```bash
 npm install @fluxiapi/scan
 ```
 
-### Chrome Extension — Scan in DevTools
+### Chrome Extension
 
 1. Download `packages/extension/` from this repo
 2. Go to `chrome://extensions` → Enable Developer Mode
@@ -85,61 +119,127 @@ npm install @fluxiapi/scan
 
 ---
 
-## Quick Start
+## Vue & React DevTools
 
-### CLI (zero install)
+### CLI vs DevTools
 
-```bash
-npx flux-scan https://myapp.com
+| Feature | CLI (`npx flux-scan`) | DevTools (`<FluxDevTools />`) |
+|---------|----------------------|------------------------------|
+| Runs | From terminal, outside your app | Inside your app during development |
+| Captures | Initial page load (30-60s) | Every API call including user interactions |
+| Sees | Network requests only | Which component triggered which call |
+| Library integration | None | TanStack Query, SWR, Vue Query config |
+| Feedback | One-time report | Live — code change → instant score update |
+
+### Vue Setup
+
+```vue
+<script setup>
+import { FluxDevTools } from '@fluxiapi/vue';
+</script>
+
+<template>
+  <RouterView />
+  <FluxDevTools force-show verbose network="jio-4g" />
+</template>
 ```
 
-That's it. Opens headless Chrome, captures 30 seconds of traffic, prints the score.
+**With TanStack Vue Query:**
+```ts
+import { wrapQueryClient } from '@fluxiapi/vue';
+const queryClient = wrapQueryClient(new QueryClient());
+app.use(VueQueryPlugin, { queryClient });
+```
+
+**Composables:**
+```vue
+<script setup>
+import { useFluxScore, useFluxViolations, useFluxScanning } from '@fluxiapi/vue';
+
+const score = useFluxScore();
+const violations = useFluxViolations({ severity: 'critical' });
+const { scanning, start, stop } = useFluxScanning();
+</script>
+```
+
+**Nuxt:**
+```ts
+// plugins/fluxapi.client.ts
+export default defineNuxtPlugin((nuxtApp) => {
+  if (process.dev) {
+    nuxtApp.vueApp.use(FluxPlugin, { network: 'jio-4g' });
+  }
+});
+```
+
+### React Setup
+
+```jsx
+import { FluxDevTools } from '@fluxiapi/react';
+
+function App() {
+  return (
+    <>
+      <YourApp />
+      <FluxDevTools />
+    </>
+  );
+}
+```
+
+**With TanStack Query:**
+```jsx
+import { wrapQueryClient } from '@fluxiapi/react';
+const queryClient = wrapQueryClient(new QueryClient());
+```
+
+**With SWR:**
+```jsx
+import { fluxSWRMiddleware } from '@fluxiapi/react';
+<SWRConfig value={{ use: [fluxSWRMiddleware] }}>
+```
+
+**Hooks:**
+```jsx
+import { useFluxScore, useFluxViolations, useFluxScanning } from '@fluxiapi/react';
+
+const { overall, grade, color } = useFluxScore();
+const violations = useFluxViolations({ severity: 'critical' });
+const { scanning, start, stop } = useFluxScanning();
+```
+
+### `<FluxDevTools />` Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `position` | `string` | `'bottom-right'` | Badge position (bottom-right/left, top-right/left) |
+| `network` | `string` | `'wifi'` | Network profile for scoring |
+| `analysisInterval` | `number` | `3000` | Re-analysis interval (ms) |
+| `autoStart` | `boolean` | `true` | Auto-start scanning on mount |
+| `defaultOpen` | `boolean` | `false` | Start with panel expanded |
+| `verbose` | `boolean` | `false` | Console debug logging |
+| `forceShow` | `boolean` | `false` | Show in production mode |
+| `shortcut` | `string` | `'ctrl+shift+f'` | Keyboard toggle shortcut |
 
 ---
 
 ## CLI Examples
 
-### Basic scan with HTML report
 ```bash
+# Basic scan with HTML report
 npx flux-scan https://myapp.com -o report.html
-```
 
-### Test with Indian network conditions
-```bash
+# Indian network conditions
 npx flux-scan https://myapp.com --network jio-4g -o report.html
-```
 
-### Authenticated apps (manual login)
-```bash
+# Authenticated apps (manual login)
 npx flux-scan https://myapp.com --no-headless --interact
-```
-Opens a visible browser → login manually → browse around → press Enter when done.
 
-### Longer scan with visible browser
-```bash
-npx flux-scan https://myapp.com --no-headless -d 60
-```
-
-### Analyze a saved session
-```bash
-npx flux-scan --session scan-data.json -o report.html
-```
-
-### JSON output for CI/CD pipelines
-```bash
+# JSON output for CI/CD
 npx flux-scan https://staging.myapp.com -f json
-```
 
-### Slow network stress test
-```bash
+# Slow network stress test
 npx flux-scan https://myapp.com -n bsnl-2g -o slow-report.html
-```
-
-### Compare WiFi vs Jio 4G
-```bash
-npx flux-scan https://myapp.com -n wifi -o wifi-report.html
-npx flux-scan https://myapp.com -n jio-4g -o jio-report.html
-# Compare the two HTML reports
 ```
 
 ---
@@ -151,69 +251,20 @@ USAGE
   npx flux-scan <url> [options]
 
 OPTIONS
-  -d, --duration <sec>   Scan duration in seconds (default: 30)
-  -n, --network <name>   Network profile for scoring
-                         wifi | jio-4g | airtel-4g | airtel-3g | bsnl-2g | slow-3g
+  -d, --duration <sec>   Scan duration (default: 30)
+  -n, --network <n>      wifi | jio-4g | airtel-4g | airtel-3g | bsnl-2g | slow-3g
   -o, --output <file>    Output file (.html or .json)
-  -f, --format <fmt>     Output format: console | html | json
-  -s, --session <file>   Analyze saved session JSON (skip live scan)
-      --no-headless      Show browser window during scan
-      --interact         Manual browse mode (press Enter to stop)
+  -f, --format <fmt>     console | html | json
+  -s, --session <file>   Analyze saved session JSON
+      --no-headless      Show browser window
+      --interact         Manual browse mode
   -h, --help             Show help
   -v, --version          Show version
 
 EXIT CODES
   0  Score >= 50 (pass)
-  1  Score < 50  (fail — useful for CI/CD)
+  1  Score < 50  (fail)
   2  Fatal error
-```
-
----
-
-## Use Cases
-
-### 1. Pre-deploy audit
-Run before every deploy to catch API regressions:
-```bash
-npx flux-scan https://staging.myapp.com -o report.html
-# Open report.html → share with team
-```
-
-### 2. CI/CD quality gate
-Fail the build if API health drops below 50:
-```bash
-npx flux-scan https://staging.myapp.com -f json
-# Exit code 1 if score < 50
-```
-
-### 3. India market optimization
-Your app works on WiFi but how does it perform on Jio 4G?
-```bash
-npx flux-scan https://myapp.com -n jio-4g -o jio-report.html
-npx flux-scan https://myapp.com -n bsnl-2g -o bsnl-report.html
-```
-
-### 4. Authenticated app scanning
-For apps behind login (admin panels, dashboards):
-```bash
-npx flux-scan https://admin.myapp.com --no-headless --interact
-# Login manually → browse all pages → press Enter
-```
-
-### 5. Chrome DevTools (daily workflow)
-Load the extension for real-time scanning while you develop:
-1. Load `packages/extension/` as unpacked extension
-2. Open DevTools (F12) → FluxAPI tab
-3. Start Scan → browse → Stop → see results instantly
-4. Export as HTML or JSON
-
-### 6. Compare before/after optimization
-```bash
-# Before fix
-npx flux-scan https://myapp.com -o before.html
-# Apply the suggested fixes
-# After fix
-npx flux-scan https://myapp.com -o after.html
 ```
 
 ---
@@ -221,24 +272,15 @@ npx flux-scan https://myapp.com -o after.html
 ## Programmatic API
 
 ```typescript
-import { FluxScanner, FluxAnalyzer, generateHtmlReport, printReport } from '@fluxiapi/scan';
+import { FluxScanner, FluxAnalyzer, generateHtmlReport } from '@fluxiapi/scan';
 
-// 1. Scan
 const scanner = new FluxScanner({ duration: 60, network: 'jio-4g' });
 scanner.start();
-// ... user browses app ...
 const session = scanner.stop();
 
-// 2. Analyze
-const analyzer = new FluxAnalyzer({
-  network: 'jio-4g',
-  monthlyActiveUsers: 50000,
-});
+const analyzer = new FluxAnalyzer({ network: 'jio-4g' });
 const report = analyzer.analyze(session);
-
-// 3. Output
-console.log(printReport(report));          // Console table
-const html = generateHtmlReport(report);   // Self-contained HTML
+const html = generateHtmlReport(report);
 ```
 
 ---
@@ -255,22 +297,7 @@ const html = generateHtmlReport(report);   // Self-contained HTML
 
 ---
 
-## Chrome DevTools Extension
-
-Real-time API scanning right inside Chrome DevTools. Best for authenticated apps.
-
-1. Go to `chrome://extensions` → Enable Developer mode
-2. Click "Load unpacked" → select `packages/extension/`
-3. Open any site → F12 → **FluxAPI** tab
-4. Click **▶ SCAN** → browse your app → click **■ STOP**
-5. View score, violations, request timeline
-6. Export as **HTML** or **JSON**
-
----
-
 ## Network-Adjusted Scoring
-
-Same API issues cost differently on different networks:
 
 | Network | Latency | Bandwidth | Example Score |
 |---------|---------|-----------|---------------|
@@ -279,33 +306,6 @@ Same API issues cost differently on different networks:
 | Airtel 3G | 3.0× | 5.0× | 45/100 |
 | BSNL 2G | 8.0× | 15.0× | 23/100 |
 
-```bash
-npx flux-scan https://myapp.com --network jio-4g
-# Same app, same API calls — different score based on real network conditions
-```
-
----
-
-## Fix Code Generator
-
-Every violation comes with production-ready code:
-
-| Rule | Fix Generated |
-|------|--------------|
-| E1 Waterfall | `Promise.all([...])` or `useSuspenseQueries` |
-| E2 Duplicates | Shared `useQuery` hook with `staleTime` |
-| E3 N+1 | Batch endpoint with `?ids=1,2,3` |
-| C1 No Cache | `staleTime: 30_000` + `Cache-Control` header |
-| C2 Under-Cache | Optimized TTL based on response variance |
-| C3 Over-Cache | Reduced TTL + `stale-while-revalidate` |
-| C4 Revalidation | Conditional requests with ETag / If-None-Match |
-| P1 Prefetch | `prefetchQuery` on likely navigation routes |
-| P2 Polling | Reduced `refetchInterval` or switch to SSE |
-| P3 Recovery | Exponential backoff retry config |
-| P4 Compression | Server-side gzip/brotli config (Express/Nginx/Laravel) |
-
-All fixes adapt to your detected stack: **React + TanStack Query**, **React + SWR**, **Vue composables**, **Apollo Client**, **Angular HttpClient**, or **vanilla JS**.
-
 ---
 
 ## Architecture
@@ -313,41 +313,42 @@ All fixes adapt to your detected stack: **React + TanStack Query**, **React + SW
 ```
 @fluxiapi/scan        — Core library (scanner, analyzer, fixer, reporter)
 @fluxiapi/cli         — npx flux-scan (Puppeteer + Chrome DevTools Protocol)
+@fluxiapi/vue         — Vue 3 DevTools + composables + Vue Query integration
+@fluxiapi/react       — React DevTools + hooks + TanStack Query / SWR integration
 extension/           — Chrome DevTools panel (Manifest V3)
 github-action/       — CI/CD integration (action.yml)
 landing/             — Marketing site
 ```
 
-## Stats
+## Packages
 
-| Metric | Value |
-|--------|-------|
-| Source lines | ~9,500 |
-| Tests | 127/127 |
-| Type errors | 0 |
-| Build (ESM) | 167 KB |
-| Build (CJS) | 170 KB |
-| CLI bundle | 207 KB |
+| Package | Description | Size |
+|---------|-------------|------|
+| [`@fluxiapi/scan`](https://www.npmjs.com/package/@fluxiapi/scan) | Core scanner + analyzer engine | 167 KB |
+| [`@fluxiapi/cli`](https://www.npmjs.com/package/@fluxiapi/cli) | CLI tool (`npx flux-scan`) | 207 KB |
+| [`@fluxiapi/vue`](https://www.npmjs.com/package/@fluxiapi/vue) | Vue 3 DevTools + composables | 34 KB |
+| [`@fluxiapi/react`](https://www.npmjs.com/package/@fluxiapi/react) | React DevTools + hooks | 42 KB |
 
 ## Changelog
 
-### v0.4.0 — Smarter Scanner
-- **Framework detection**: Auto-detects React, Next.js, Vue, Nuxt, Remix, SvelteKit, Angular
-- **GraphQL dedup**: Parses operations, detects duplicate queries by hash + variables
-- **WebSocket monitor**: Tracks connections, message rates, channels, subscriptions
-- **Framework-aware fixes**: Generates code for TanStack Query, SWR, Apollo, Vue, Angular (6 frameworks × 3 fix types)
-- **Extension upgrade**: Framework detection + GraphQL dedup in DevTools panel
-- **RTK Query & urql detection**: Expanded data library detection
+### v0.3.2 — Vue & React DevTools
+- **`@fluxiapi/vue`** — Drop-in `<FluxDevTools />` for Vue 3 / Nuxt
+- **`@fluxiapi/react`** — Drop-in `<FluxDevTools />` for React / Next.js
+- Floating badge with live score, expandable panel (Overview / Violations / Requests)
+- Vue composables + React hooks for custom UI
+- TanStack Query + SWR integration
+- Keyboard shortcut: `Ctrl+Shift+F`
+- Fixed scanner interceptor lifecycle
+
+### v0.3.0 — Smarter Scanner
+- Framework detection, GraphQL dedup, WebSocket monitor
+- Framework-aware fixes for 6 frameworks
 
 ### v0.2.0 — Full Rule Set
-- All 13 audit rules (E1-E5, C1-C4, P1-P4)
-- HTML report with rule names, page URLs, severity badges
-- CLI with full options, network profiles, session analysis
-- Chrome DevTools extension with live scanning
+- All 13 audit rules, HTML reports, CLI, Chrome extension
 
 ### v0.1.0 — MVP
-- 5 core rules (E1-E3, C1-C2)
-- CLI scanner, Chrome extension, landing page
+- 5 core rules, CLI scanner, Chrome extension
 
 ## License
 

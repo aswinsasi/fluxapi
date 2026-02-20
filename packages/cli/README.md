@@ -181,6 +181,16 @@ npx flux-scan https://myapp.com
 npx flux-scan https://myapp.com
 ```
 
+---
+
+## Related Packages
+
+| Package | Description |
+|---------|-------------|
+| [`@fluxiapi/scan`](https://www.npmjs.com/package/@fluxiapi/scan) | Core scanner + analyzer engine (programmatic API) |
+| [`@fluxiapi/vue`](https://www.npmjs.com/package/@fluxiapi/vue) | `<FluxDevTools />` for Vue 3 / Nuxt — live API monitoring during development |
+| [`@fluxiapi/react`](https://www.npmjs.com/package/@fluxiapi/react) | `<FluxDevTools />` for React / Next.js — live API monitoring with TanStack Query & SWR |
+
 ## License
 
 MIT
