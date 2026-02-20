@@ -5,6 +5,7 @@
 
 var scanning = false, scanStart = 0, requests = [], timer = null, report = null, pageUrl = '';
 var detectedFramework = null, detectedDataLib = null, detectedMetaFramework = null;
+var wsConnections = 0;
 
 // Rule ID → Human-readable name
 var RULE_NAMES = {
@@ -23,6 +24,72 @@ var RULE_NAMES = {
   P4: 'Uncompressed Responses',
 };
 function ruleName(id) { return RULE_NAMES[id] || id; }
+
+// Network-adjusted scoring multipliers
+var NET_PROFILES = {
+  'wifi':      { latency: 1.0, bandwidth: 1.0 },
+  'jio-4g':    { latency: 1.8, bandwidth: 2.5 },
+  'airtel-4g': { latency: 1.5, bandwidth: 2.0 },
+  'airtel-3g': { latency: 3.0, bandwidth: 5.0 },
+  'slow-3g':   { latency: 4.0, bandwidth: 8.0 },
+  'bsnl-2g':   { latency: 8.0, bandwidth: 15.0 },
+};
+
+function getNetMultiplier() {
+  var net = document.getElementById('netSel').value;
+  var p = NET_PROFILES[net] || NET_PROFILES['wifi'];
+  return (p.latency + p.bandwidth) / 2;
+}
+
+function adjustScore(baseScore) {
+  var mult = getNetMultiplier();
+  if (mult <= 1.0) return baseScore;
+  var penalty = (100 - baseScore) * (mult - 1) * 0.4;
+  return Math.max(0, Math.round(baseScore - penalty));
+}
+
+// Framework-aware fix code generation
+function genFix(ruleId, data) {
+  var fw = detectedFramework;
+  var dl = detectedDataLib;
+  var isReact = fw === 'React';
+  var isVue = fw === 'Vue';
+  var isTanstack = dl === 'TanStack Query';
+  var isSWR = dl === 'SWR';
+  var isApollo = dl === 'Apollo';
+
+  switch(ruleId) {
+    case 'E1': // Waterfall
+      if (isTanstack && isReact) return 'import { useSuspenseQueries } from \'@tanstack/react-query\';\n\nconst results = useSuspenseQueries({\n  queries: [\n' + data.urls.map(function(u){return '    { queryKey: [\'' + hookName(u) + '\'], queryFn: () => fetch(\'' + u + '\').then(r => r.json()) },'}).join('\n') + '\n  ]\n});';
+      if (isTanstack && isVue) return 'import { useQueries } from \'@tanstack/vue-query\';\n\nconst results = useQueries({\n  queries: [\n' + data.urls.map(function(u){return '    { queryKey: [\'' + hookName(u) + '\'], queryFn: () => fetch(\'' + u + '\').then(r => r.json()) },'}).join('\n') + '\n  ]\n});';
+      return 'const results = await Promise.all([\n' + data.urls.map(function(u){return '  fetch(\'' + u.replace(/'/g,"\\'") + '\'),'}).join('\n') + '\n]);';
+
+    case 'E2': // Duplicates
+      var hk = hookName(data.path);
+      if (isTanstack && isReact) return 'export function use' + hk + '() {\n  return useQuery({\n    queryKey: [\'' + data.path.replace(/\//g,'-').replace(/^-/,'') + '\'],\n    queryFn: () => fetch(\'' + data.sampleUrl + '\').then(r => r.json()),\n    staleTime: 30_000,\n  });\n}';
+      if (isTanstack && isVue) return 'export function use' + hk + '() {\n  return useQuery({\n    queryKey: [\'' + data.path.replace(/\//g,'-').replace(/^-/,'') + '\'],\n    queryFn: () => fetch(\'' + data.sampleUrl + '\').then(r => r.json()),\n    staleTime: 30_000,\n  });\n}';
+      if (isSWR) return 'export function use' + hk + '() {\n  return useSWR(\'' + data.path + '\', fetcher, {\n    dedupingInterval: 30000,\n  });\n}';
+      if (isVue) return 'export function use' + hk + '() {\n  const data = ref(null);\n  const fetch' + hk + ' = async () => {\n    data.value = await fetch(\'' + data.sampleUrl + '\').then(r => r.json());\n  };\n  onMounted(fetch' + hk + ');\n  return { data };\n}';
+      return 'export function use' + hk + '() {\n  return useQuery({\n    queryKey: [\'' + data.path.replace(/\//g,'-').replace(/^-/,'') + '\'],\n    queryFn: () => fetch(\'' + data.sampleUrl + '\').then(r => r.json()),\n    staleTime: 30_000,\n  });\n}';
+
+    case 'E3': // N+1
+      return '// Batch endpoint\nfetch(\'/api' + data.pattern.replace(':id','') + '?ids=' + data.sampleIds.join(',') + ',..\')\n  .then(r => r.json());';
+
+    case 'C1': // No cache
+      var key = data.endpoint.replace(/\//g,'-').replace(/^-/,'');
+      if (isTanstack) return 'useQuery({\n  queryKey: [\'' + key + '\'],\n  queryFn: fetchFn,\n  staleTime: 30_000,\n  gcTime: 5 * 60_000,\n});';
+      if (isSWR) return 'useSWR(\'' + data.endpoint + '\', fetcher, {\n  dedupingInterval: 30000,\n  revalidateOnFocus: false,\n});';
+      return 'useQuery({\n  queryKey: [\'' + key + '\'],\n  queryFn: fetchFn,\n  staleTime: 30_000,\n  gcTime: 5 * 60_000,\n});';
+
+    case 'P3': // Error recovery
+      var key2 = data.endpoint.replace(/\//g,'-').replace(/^-/,'');
+      if (isTanstack) return 'useQuery({\n  queryKey: [\'' + key2 + '\'],\n  queryFn: fetchFn,\n  retry: 3,\n  retryDelay: (n) => Math.min(1000 * 2 ** n, 30000),\n});';
+      return 'useQuery({\n  queryKey: [\'' + key2 + '\'],\n  queryFn: fetchFn,\n  retry: 3,\n  retryDelay: (n) => Math.min(1000 * 2 ** n, 30000),\n});';
+
+    default:
+      return data.defaultFix || '';
+  }
+}
 
 // Wire everything after DOM is ready
 window.onload = function() {
@@ -85,10 +152,12 @@ function startScan() {
     'else if(window.__NUXT__||window.$nuxt)m="Nuxt";' +
     'else if(window.__remixContext)m="Remix";' +
     'else if(window.__sveltekit)m="SvelteKit";' +
-    'if(window.__REACT_QUERY_DEVTOOLS__)d="TanStack Query";' +
+    'if(window.__REACT_QUERY_DEVTOOLS__||window.__TANSTACK_QUERY_DEVTOOLS__)d="TanStack Query";' +
     'else if(window.__APOLLO_CLIENT__)d="Apollo";' +
     'else if(window.__SWR_DEVTOOLS__||window.__SWR_STORE__)d="SWR";' +
-    'return JSON.stringify({framework:f,version:v,metaFramework:m,dataLib:d})})()',
+    'else if(window.__RTK_QUERY__)d="RTK Query";' +
+    'var ws=0;try{var origWS=window.WebSocket;if(origWS&&origWS.__flux_count)ws=origWS.__flux_count}catch(e){}' +
+    'return JSON.stringify({framework:f,version:v,metaFramework:m,dataLib:d,wsCount:ws})})()',
     function(result) {
       if (result) {
         try {
@@ -99,6 +168,14 @@ function startScan() {
         } catch(e) {}
       }
     }
+  );
+
+  // Inject WebSocket counter
+  chrome.devtools.inspectedWindow.eval(
+    '(function(){if(window.__FLUX_WS_PATCHED__)return;window.__FLUX_WS_PATCHED__=true;' +
+    'var O=window.WebSocket;var c=0;' +
+    'window.WebSocket=function(u,p){c++;O.__flux_count=c;return p?new O(u,p):new O(u)};' +
+    'window.WebSocket.prototype=O.prototype;window.WebSocket.__flux_count=0})()'
   );
 
   var btn = document.getElementById('scanBtn');
@@ -123,7 +200,16 @@ function stopScan() {
   var elapsed = Math.round((Date.now() - scanStart) / 1000);
   document.getElementById('status').textContent = requests.length + ' reqs · ' + elapsed + 's';
 
-  setTimeout(function() { analyze(); }, 100);
+  setTimeout(function() {
+    // Capture WebSocket count before analysis
+    chrome.devtools.inspectedWindow.eval(
+      '(function(){try{return window.WebSocket.__flux_count||0}catch(e){return 0}})()',
+      function(wsCount) {
+        wsConnections = wsCount || 0;
+        analyze();
+      }
+    );
+  }, 100);
 }
 
 function onReq(har) {
@@ -191,8 +277,8 @@ function analyze() {
         title: c.length + ' sequential requests (waterfall)',
         description: c.length + ' API calls run one after another. Use Promise.all or useSuspenseQueries to parallelize.',
         endpoints: c.map(function(r) { return r.method + ' ' + (r.urlParts.pathname || r.url); }),
-        impact: { timeSavedMs: totalTime - maxTime, requestsEliminated: 0, bandwidthSavedBytes: 0 },
-        fix: 'const results = await Promise.all([\n' + c.map(function(r) { return '  fetch(\'' + r.url.replace(/'/g,"\\'") + '\'),'; }).join('\n') + '\n]);',
+        impact: { timeSavedMs: Math.round((totalTime - maxTime) * getNetMultiplier()), requestsEliminated: 0, bandwidthSavedBytes: 0 },
+        fix: genFix('E1', { urls: c.map(function(r) { return r.url; }) }),
       });
       effScore -= Math.min(20, c.length * 5);
     });
@@ -213,10 +299,10 @@ function analyze() {
         violations.push({
           ruleId: 'E2', severity: 'critical',
           title: sig.split('|')[1] + ' called ' + g.length + 'x',
-          description: 'Same endpoint hit ' + g.length + ' times within ' + Math.round(s[s.length-1].startTime - s[0].startTime) + 'ms. Extract a shared useQuery hook.',
+          description: 'Same endpoint hit ' + g.length + ' times within ' + Math.round(s[s.length-1].startTime - s[0].startTime) + 'ms. Extract a shared hook.',
           endpoints: g.map(function(r) { return r.method + ' ' + (r.urlParts.pathname || r.url); }),
-          impact: { timeSavedMs: (g.length - 1) * Math.round(g.reduce(function(s,r){return s+r.duration},0) / g.length), requestsEliminated: g.length - 1, bandwidthSavedBytes: 0 },
-          fix: 'export function use' + hookName(sig.split('|')[1]) + '() {\n  return useQuery({\n    queryKey: [\'' + sig.split('|')[1].replace(/\//g,'-').replace(/^-/,'') + '\'],\n    queryFn: () => fetch(\'' + g[0].url + '\').then(r => r.json()),\n    staleTime: 30_000,\n  });\n}',
+          impact: { timeSavedMs: Math.round((g.length - 1) * g.reduce(function(s,r){return s+r.duration},0) / g.length * getNetMultiplier()), requestsEliminated: g.length - 1, bandwidthSavedBytes: 0 },
+          fix: genFix('E2', { path: sig.split('|')[1], sampleUrl: g[0].url }),
         });
         effScore -= Math.min(15, g.length * 4);
       }
@@ -241,8 +327,8 @@ function analyze() {
         title: 'N+1: ' + g.length + '× ' + k.split('|')[1],
         description: g.length + ' individual requests to a parameterized endpoint. Batch with a single request.',
         endpoints: g.slice(0, 5).map(function(r) { return r.urlParts.pathname; }),
-        impact: { timeSavedMs: Math.round(g.reduce(function(s,r){return s+r.duration},0) * 0.85), requestsEliminated: g.length - 1, bandwidthSavedBytes: 0 },
-        fix: '// Batch endpoint\nfetch(\'/api' + k.split('|')[1].replace(':id','') + '?ids=' + g.slice(0,3).map(function(r){return r.urlParts.pathname.split('/').pop()}).join(',') + ',...\')',
+        impact: { timeSavedMs: Math.round(g.reduce(function(s,r){return s+r.duration},0) * 0.85 * getNetMultiplier()), requestsEliminated: g.length - 1, bandwidthSavedBytes: 0 },
+        fix: genFix('E3', { pattern: k.split('|')[1], sampleIds: g.slice(0,3).map(function(r){return r.urlParts.pathname.split('/').pop()}) }),
       });
       effScore -= Math.min(15, g.length * 2);
     }
@@ -268,8 +354,8 @@ function analyze() {
           title: 'No cache: ' + ep + ' (' + g.length + '×)',
           description: 'No Cache-Control, ETag, or Last-Modified. Every mount triggers a network request.',
           endpoints: [ep],
-          impact: { timeSavedMs: (g.length-1) * Math.round(g.reduce(function(s,r){return s+r.duration},0)/g.length), requestsEliminated: g.length - 1, bandwidthSavedBytes: g.reduce(function(s,r){return s+(r.response.bodySize||0)},0) },
-          fix: '// Add to your query\nuseQuery({\n  queryKey: [\'' + ep.replace(/\//g,'-').replace(/^-/,'') + '\'],\n  queryFn: fetchFn,\n  staleTime: 30_000,  // 30 seconds\n  gcTime: 5 * 60_000, // 5 minutes\n});',
+          impact: { timeSavedMs: Math.round((g.length-1) * g.reduce(function(s,r){return s+r.duration},0)/g.length * getNetMultiplier()), requestsEliminated: g.length - 1, bandwidthSavedBytes: g.reduce(function(s,r){return s+(r.response.bodySize||0)},0) },
+          fix: genFix('C1', { endpoint: ep }),
         });
         cacheScore -= Math.min(20, g.length * 4);
       }
@@ -412,7 +498,7 @@ function analyze() {
         title: g.length + ' failed: ' + ep + ' (no retry)',
         description: 'Returned ' + g.map(function(r){return r.response.status}).join(', ') + ' with no retry.', endpoints: [ep],
         impact: { timeSavedMs: 0, requestsEliminated: 0, bandwidthSavedBytes: 0 },
-        fix: 'useQuery({ queryKey: [\'' + ep.replace(/\//g,'-').replace(/^-/,'') + '\'], queryFn: fetchFn, retry: 3, retryDelay: (n) => Math.min(1000 * 2 ** n, 30000) });',
+        fix: genFix('P3', { endpoint: ep }),
       });
       patternScore -= 5;
     });
@@ -458,8 +544,15 @@ function analyze() {
   effScore = Math.max(0, effScore);
   cacheScore = Math.max(0, cacheScore);
   patternScore = Math.max(0, patternScore);
+
+  // Apply network-adjusted scoring
+  effScore = adjustScore(effScore);
+  cacheScore = adjustScore(cacheScore);
+  patternScore = adjustScore(patternScore);
+
   var overall = Math.round(effScore * 0.4 + cacheScore * 0.3 + patternScore * 0.3);
   var grade = overall >= 90 ? 'excellent' : overall >= 70 ? 'good' : overall >= 50 ? 'needs-work' : 'poor';
+  var net = document.getElementById('netSel').value;
   var crits = violations.filter(function(v){return v.severity==='critical'}).length;
   var warns = violations.filter(function(v){return v.severity==='warning'}).length;
   var infos = violations.filter(function(v){return v.severity==='info'}).length;
@@ -470,7 +563,7 @@ function analyze() {
     summary: { criticalCount: crits, warningCount: warns, infoCount: infos, totalViolations: violations.length },
     requests: requests,
     apiRequests: apiReqs,
-    metadata: { totalRequests: requests.length, apiRequests: apiReqs.length, duration: Math.round((Date.now() - scanStart) / 1000), pageUrl: pageUrl },
+    metadata: { totalRequests: requests.length, apiRequests: apiReqs.length, duration: Math.round((Date.now() - scanStart) / 1000), pageUrl: pageUrl, network: net },
     stack: {
       framework: detectedFramework, version: null, metaFramework: detectedMetaFramework,
       dataLibrary: detectedDataLib, graphqlDupes: graphqlDupes,
@@ -548,7 +641,7 @@ function renderOverview() {
   // Score + stats
   h += '<div class="score-row">';
   h += '<div class="score-gauge"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="40"/><circle class="value" cx="50" cy="50" r="40" stroke-dasharray="' + dash + ' 251" style="stroke:' + color + '"/></svg><div class="num"><span class="n" style="color:' + color + '">' + s.overall + '</span><span class="g" style="color:' + color + '">' + s.grade + '</span></div></div>';
-  h += '<div class="score-details"><h3>API Health Score</h3><div style="font-size:11px;color:var(--fg3)">' + r.metadata.apiRequests + ' API calls captured in ' + r.metadata.duration + 's</div>';
+  h += '<div class="score-details"><h3>API Health Score</h3><div style="font-size:11px;color:var(--fg3)">' + r.metadata.apiRequests + ' API calls · ' + r.metadata.duration + 's · ' + (r.metadata.network || 'wifi').toUpperCase() + '</div>';
   if (r.metadata.pageUrl) h += '<div style="font-size:11px;color:var(--accent);margin-top:4px;word-break:break-all">📍 ' + esc(r.metadata.pageUrl) + '</div>';
   // Detected stack
   if (r.stack && r.stack.framework) {
@@ -556,6 +649,10 @@ function renderOverview() {
     if (r.stack.metaFramework) stackStr += ' (' + r.stack.metaFramework + ')';
     if (r.stack.dataLibrary) stackStr += ' · ' + r.stack.dataLibrary;
     h += '<div style="font-size:11px;color:var(--green);margin-top:3px">' + esc(stackStr) + '</div>';
+  }
+  // WebSocket connections
+  if (wsConnections > 0) {
+    h += '<div style="font-size:11px;color:var(--cyan);margin-top:3px">🌐 ' + wsConnections + ' WebSocket connection' + (wsConnections > 1 ? 's' : '') + '</div>';
   }
   // GraphQL dupes
   if (r.stack && r.stack.graphqlDupes && r.stack.graphqlDupes.length > 0) {
@@ -759,7 +856,10 @@ function doExportHtml() {
     if (st.dataLibrary) stackLine += ' &middot; ' + st.dataLibrary;
     html += '<div style="font-size:13px;color:#34d399;margin-bottom:4px">' + stackLine + '</div>';
   }
-  html += '<div class="sub">' + ts + ' · ' + m.apiRequests + ' API calls · ' + m.duration + 's scan · Network: ' + esc(net) + '</div>';
+  if (wsConnections > 0) {
+    html += '<div style="font-size:13px;color:#40d9d9;margin-bottom:4px">🌐 ' + wsConnections + ' WebSocket connection' + (wsConnections > 1 ? 's' : '') + '</div>';
+  }
+  html += '<div class="sub">' + ts + ' · ' + m.apiRequests + ' API calls · ' + m.duration + 's scan · Network: ' + esc(m.network || net).toUpperCase() + '</div>';
 
   // Score + gauge
   html += '<div class="score-row"><div class="gauge"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="40"/><circle class="val" cx="50" cy="50" r="40" stroke-dasharray="' + dash + ' 251" style="stroke:' + color + '"/></svg><div class="num"><span class="n" style="color:' + color + '">' + s.overall + '</span><span class="g" style="color:' + color + '">' + s.grade + '</span></div></div>';
@@ -829,7 +929,7 @@ function doExportHtml() {
     html += '</tbody></table>';
   }
 
-  html += '<div class="footer">Generated by FluxAPI v0.4.0 · ' + ts + '</div>';
+  html += '<div class="footer">Generated by FluxAPI v0.3.2 · ' + ts + '</div>';
   html += '</body></html>';
 
   var blob = new Blob([html], { type: 'text/html' });
@@ -842,6 +942,7 @@ function doExportHtml() {
 function doClear() {
   report = null; requests = [];
   detectedFramework = null; detectedDataLib = null; detectedMetaFramework = null;
+  wsConnections = 0;
   document.getElementById('tabBar').style.display = 'none';
   document.getElementById('exportHtmlBtn').style.display = 'none'; document.getElementById('exportJsonBtn').style.display = 'none';
   document.getElementById('clearBtn').style.display = 'none';

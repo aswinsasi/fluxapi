@@ -31,7 +31,7 @@ function injectInterceptors() {
   // Listen for captured requests from the injected script
   window.addEventListener('__FLUXAPI_REQUEST__', (e) => {
     if (!isScanning) return;
-    const detail = (e as CustomEvent).detail;
+    const detail = e.detail;
     if (!detail) return;
 
     reqSeq++;
