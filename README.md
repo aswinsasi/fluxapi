@@ -42,7 +42,7 @@ npx flux-scan https://your-app.com -o report.html
 | **P3** | Missing Error Recovery — 500s with no retry | Exponential backoff retry | 🔵 Info |
 | **P4** | Uncompressed Responses — JSON without gzip/brotli | Server compression config | 🔵 Info |
 
-### 🧠 Intelligence (v0.2.0)
+### 🧠 Intelligence (v0.4.0)
 
 | Feature | What it Does |
 |---------|-------------|
@@ -52,6 +52,36 @@ npx flux-scan https://your-app.com -o report.html
 | **Framework-Aware Fixes** | Generates fix code for TanStack Query, SWR, Apollo, Vue composables, Angular |
 
 Every violation generates **framework-aware fix code** — React, Vue, Angular, SWR, Apollo — that matches your detected stack.
+
+---
+
+## Installation
+
+### CLI — Scan any URL from terminal
+
+```bash
+# Zero install (recommended)
+npx flux-scan https://myapp.com -o report.html
+
+# Or install globally
+npm install -g @fluxiapi/cli
+flux-scan https://myapp.com -o report.html
+```
+
+**Prerequisites:** Node.js >= 18. Puppeteer (auto-installed on first run) downloads Chromium.
+
+### SDK — Integrate into your app
+
+```bash
+npm install @fluxiapi/scan
+```
+
+### Chrome Extension — Scan in DevTools
+
+1. Download `packages/extension/` from this repo
+2. Go to `chrome://extensions` → Enable Developer Mode
+3. Click "Load unpacked" → select the extension folder
+4. Open DevTools → **FluxAPI** tab → Start Scan
 
 ---
 
@@ -216,7 +246,7 @@ const html = generateHtmlReport(report);   // Self-contained HTML
 ## GitHub Action
 
 ```yaml
-- uses: aswinsasi/fluxapi-scan-action@v1
+- uses: AswanthManoj/fluxapi-scan-action@v1
   with:
     url: https://staging.your-app.com
     threshold: 70
@@ -267,8 +297,14 @@ Every violation comes with production-ready code:
 | E3 N+1 | Batch endpoint with `?ids=1,2,3` |
 | C1 No Cache | `staleTime: 30_000` + `Cache-Control` header |
 | C2 Under-Cache | Optimized TTL based on response variance |
+| C3 Over-Cache | Reduced TTL + `stale-while-revalidate` |
+| C4 Revalidation | Conditional requests with ETag / If-None-Match |
+| P1 Prefetch | `prefetchQuery` on likely navigation routes |
+| P2 Polling | Reduced `refetchInterval` or switch to SSE |
+| P3 Recovery | Exponential backoff retry config |
+| P4 Compression | Server-side gzip/brotli config (Express/Nginx/Laravel) |
 
-All fixes include vanilla JS alternatives for non-React projects.
+All fixes adapt to your detected stack: **React + TanStack Query**, **React + SWR**, **Vue composables**, **Apollo Client**, **Angular HttpClient**, or **vanilla JS**.
 
 ---
 
@@ -286,11 +322,32 @@ landing/             — Marketing site
 
 | Metric | Value |
 |--------|-------|
-| Source lines | ~8,000 |
+| Source lines | ~9,500 |
 | Tests | 127/127 |
 | Type errors | 0 |
-| Build (ESM) | 117 KB |
-| Build (CJS) | 120 KB |
+| Build (ESM) | 167 KB |
+| Build (CJS) | 170 KB |
+| CLI bundle | 207 KB |
+
+## Changelog
+
+### v0.4.0 — Smarter Scanner
+- **Framework detection**: Auto-detects React, Next.js, Vue, Nuxt, Remix, SvelteKit, Angular
+- **GraphQL dedup**: Parses operations, detects duplicate queries by hash + variables
+- **WebSocket monitor**: Tracks connections, message rates, channels, subscriptions
+- **Framework-aware fixes**: Generates code for TanStack Query, SWR, Apollo, Vue, Angular (6 frameworks × 3 fix types)
+- **Extension upgrade**: Framework detection + GraphQL dedup in DevTools panel
+- **RTK Query & urql detection**: Expanded data library detection
+
+### v0.2.0 — Full Rule Set
+- All 13 audit rules (E1-E5, C1-C4, P1-P4)
+- HTML report with rule names, page URLs, severity badges
+- CLI with full options, network profiles, session analysis
+- Chrome DevTools extension with live scanning
+
+### v0.1.0 — MVP
+- 5 core rules (E1-E3, C1-C2)
+- CLI scanner, Chrome extension, landing page
 
 ## License
 

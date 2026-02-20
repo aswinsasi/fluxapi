@@ -429,7 +429,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   if (args.version) {
-    console.log('flux-scan v0.3.0');
+    console.log('flux-scan v0.4.0');
     process.exit(0);
   }
 

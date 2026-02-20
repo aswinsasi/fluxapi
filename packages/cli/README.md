@@ -2,9 +2,49 @@
 
 CLI for [FluxAPI](https://github.com/aswinsasi/fluxapi) — scan any URL for API anti-patterns. **13 audit rules**, framework-aware fixes, GraphQL dedup, WebSocket monitoring.
 
+## Installation
+
+### Zero install (recommended)
+
 ```bash
 npx flux-scan https://myapp.com -o report.html
 ```
+
+### Global install
+
+```bash
+npm install -g @fluxiapi/cli
+
+# Now use directly:
+flux-scan https://myapp.com -o report.html
+```
+
+### Prerequisites
+
+- **Node.js >= 18** — [Download](https://nodejs.org)
+- **Puppeteer** — installed automatically on first run, or manually:
+
+```bash
+npm install -g puppeteer
+```
+
+> Puppeteer downloads Chromium (~170MB) on first run. If you're behind a proxy or firewall, see [Puppeteer troubleshooting](https://pptr.dev/troubleshooting).
+
+---
+
+## Quick Start
+
+```bash
+# 1. Scan any URL (30 seconds, headless Chrome)
+npx flux-scan https://myapp.com
+
+# 2. Get an HTML report
+npx flux-scan https://myapp.com -o report.html
+
+# 3. Open report.html in your browser — see score, violations, and fix code
+```
+
+---
 
 ## What it Detects
 
@@ -43,6 +83,8 @@ npx flux-scan https://myapp.com -o report.html
 - **WebSocket Monitor** — tracks connections, message rates, subscriptions
 - **Framework-Aware Fixes** — generates fix code for TanStack Query, SWR, Apollo, Vue composables, Angular
 
+---
+
 ## Examples
 
 ```bash
@@ -68,6 +110,8 @@ npx flux-scan https://staging.myapp.com -f json
 npx flux-scan https://myapp.com -n bsnl-2g -o slow-report.html
 ```
 
+---
+
 ## Options
 
 ```
@@ -82,6 +126,8 @@ npx flux-scan https://myapp.com -n bsnl-2g -o slow-report.html
 -v, --version           Show version
 ```
 
+---
+
 ## Use Cases
 
 | Scenario | Command |
@@ -92,6 +138,8 @@ npx flux-scan https://myapp.com -n bsnl-2g -o slow-report.html
 | India network test | `npx flux-scan https://myapp.com -n jio-4g -o jio.html` |
 | Compare networks | Run twice: `-n wifi` vs `-n bsnl-2g`, compare reports |
 
+---
+
 ## Scoring
 
 | Score | Grade | Meaning |
@@ -101,11 +149,37 @@ npx flux-scan https://myapp.com -n bsnl-2g -o slow-report.html
 | 50-69 | 🟡 Needs Work | Several optimization opportunities |
 | 0-49 | 🔴 Poor | Significant API anti-patterns detected |
 
+---
+
 ## Exit Codes
 
 - `0` — Score >= 50 (pass)
 - `1` — Score < 50 (fail — useful for CI/CD)
 - `2` — Fatal error
+
+---
+
+## Troubleshooting
+
+**Puppeteer won't install / Chromium download fails**
+```bash
+# Use system Chrome instead
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome npx flux-scan https://myapp.com
+# On Windows:
+set PUPPETEER_EXECUTABLE_PATH="C:\Program Files\Google\Chrome\Application\chrome.exe"
+npx flux-scan https://myapp.com
+```
+
+**Scan captures 0 API requests**
+- Make sure the site actually makes API calls during the scan window
+- Increase duration: `-d 60`
+- Use `--no-headless` to watch the browser and verify the page loads
+
+**Permission errors on global install**
+```bash
+# Use npx instead (no global install needed)
+npx flux-scan https://myapp.com
+```
 
 ## License
 

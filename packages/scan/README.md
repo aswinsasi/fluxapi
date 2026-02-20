@@ -2,9 +2,69 @@
 
 **Lighthouse for your API calls.** Scans your web app's network layer for performance anti-patterns and generates framework-aware fix code.
 
+## Installation
+
 ```bash
 npm install @fluxiapi/scan
 ```
+
+or with yarn/pnpm:
+
+```bash
+yarn add @fluxiapi/scan
+pnpm add @fluxiapi/scan
+```
+
+### Requirements
+
+- **Node.js >= 18**
+- **TypeScript >= 5.0** (if using TypeScript — types are included)
+
+> This is the **core scan engine**. For CLI usage (scan any URL from terminal), install [@fluxiapi/cli](https://www.npmjs.com/package/@fluxiapi/cli) instead or run `npx flux-scan`.
+
+---
+
+## Quick Start
+
+### Browser (in-app integration)
+
+```typescript
+import { FluxScanner, FluxAnalyzer, generateHtmlReport, printReport } from '@fluxiapi/scan';
+
+// 1. Start scanning (monkey-patches fetch/XHR to capture requests)
+const scanner = new FluxScanner({ duration: 60, network: 'jio-4g' });
+scanner.start();
+
+// 2. User browses your app...
+
+// 3. Stop and get session data
+const session = scanner.stop();
+
+// 4. Analyze
+const analyzer = new FluxAnalyzer({ network: 'jio-4g' });
+const report = analyzer.analyze(session);
+
+// 5. Output
+console.log(printReport(report));              // Console summary
+const html = generateHtmlReport(report);       // Self-contained HTML report
+```
+
+### Script tag (no build tools)
+
+```html
+<script src="https://unpkg.com/@fluxiapi/scan"></script>
+<script>
+  const scanner = new FluxScanner({ duration: 30 });
+  scanner.start();
+  setTimeout(() => {
+    const session = scanner.stop();
+    const report = new FluxAnalyzer().analyze(session);
+    console.log(report.score); // { overall: 72, grade: 'good', ... }
+  }, 30000);
+</script>
+```
+
+---
 
 ## What it Detects
 
@@ -45,27 +105,29 @@ npm install @fluxiapi/scan
 | WebSocket Monitor | Tracks connections, message rates, channels, subscriptions |
 | Framework-Aware Fixes | Generates code for TanStack Query, SWR, Apollo, Vue composables, Angular |
 
-## Quick Start
+---
+
+## API Reference
+
+### Core
 
 ```typescript
-import { FluxScanner, FluxAnalyzer, generateHtmlReport, printReport } from '@fluxiapi/scan';
-
-// Scan
-const scanner = new FluxScanner({ duration: 60, network: 'jio-4g' });
+// Scanner — captures network requests
+const scanner = new FluxScanner({ duration: 30, network: 'wifi' });
 scanner.start();
-// ... user browses ...
 const session = scanner.stop();
 
-// Analyze
+// Analyzer — runs 13 audit rules
 const analyzer = new FluxAnalyzer({ network: 'jio-4g' });
 const report = analyzer.analyze(session);
 
-// Output
-console.log(printReport(report));              // Console
-const html = generateHtmlReport(report);       // Self-contained HTML
+// Reporters
+const html = generateHtmlReport(report);   // Self-contained HTML
+const text = printReport(report);           // Console-friendly text
+const json = JSON.stringify(report);        // Raw JSON
 ```
 
-## GraphQL Dedup
+### GraphQL Dedup
 
 ```typescript
 import { parseGraphQLBody, detectGraphQLDuplicates } from '@fluxiapi/scan';
@@ -79,12 +141,12 @@ const dupes = detectGraphQLDuplicates(requests, 3000);
 // → [{ operationName: 'GetUsers', count: 4, identicalVariables: true }]
 ```
 
-## Framework-Aware Fixes
+### Framework-Aware Fixes
 
 ```typescript
 import { detectFixFramework, generateDedupFix, generateParallelFix, generateRetryFix } from '@fluxiapi/scan';
 
-// Auto-detect best fix framework from stack
+// Auto-detect best fix framework from scan stack
 const framework = detectFixFramework(session.stack);
 // → 'react-tanstack' | 'react-swr' | 'vue-composable' | 'apollo' | 'angular' | 'vanilla'
 
@@ -92,9 +154,12 @@ const framework = detectFixFramework(session.stack);
 const fix = generateDedupFix(framework, '/api/users', 'useUsers', 'users', 30000);
 console.log(fix.code);     // Ready-to-paste code
 console.log(fix.deps);     // ['@tanstack/react-query']
+
+const parallel = generateParallelFix(framework, ['/api/users', '/api/posts']);
+const retry = generateRetryFix(framework, '/api/orders', 'useOrders', 'orders');
 ```
 
-## WebSocket Monitoring
+### WebSocket Monitoring
 
 ```typescript
 import { startWebSocketMonitoring, stopWebSocketMonitoring, getWebSocketSummary } from '@fluxiapi/scan';
@@ -107,13 +172,37 @@ const summary = getWebSocketSummary();
 // → { connections: [...], totalMessages: 142, messagesPerSecond: 2.3 }
 ```
 
+---
+
 ## CLI
 
+For quick scanning from the terminal:
+
 ```bash
+# Zero install
 npx flux-scan https://myapp.com -o report.html
-npx flux-scan https://myapp.com --network jio-4g
+
+# With network profile
+npx flux-scan https://myapp.com --network jio-4g -o report.html
+
+# Authenticated app (manual login)
 npx flux-scan https://myapp.com --no-headless --interact
 ```
+
+See [@fluxiapi/cli](https://www.npmjs.com/package/@fluxiapi/cli) for full CLI docs.
+
+---
+
+## Chrome Extension
+
+Install the [FluxAPI Chrome Extension](https://github.com/aswinsasi/fluxapi/tree/main/packages/extension) for real-time scanning in DevTools — no setup required:
+
+1. Download `packages/extension/` from the repo
+2. Go to `chrome://extensions` → Enable Developer Mode
+3. Click "Load unpacked" → select the extension folder
+4. Open DevTools → FluxAPI tab → Start Scan
+
+---
 
 ## Docs
 

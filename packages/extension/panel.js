@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 var scanning = false, scanStart = 0, requests = [], timer = null, report = null, pageUrl = '';
+var detectedFramework = null, detectedDataLib = null, detectedMetaFramework = null;
 
 // Rule ID → Human-readable name
 var RULE_NAMES = {
@@ -72,6 +73,33 @@ function startScan() {
   chrome.devtools.inspectedWindow.eval('window.location.href', function(result) {
     if (result) pageUrl = result;
   });
+
+  // Detect framework stack
+  detectedFramework = null; detectedDataLib = null; detectedMetaFramework = null;
+  chrome.devtools.inspectedWindow.eval(
+    '(function(){var f=null,v=null,m=null,d=null;' +
+    'if(window.__REACT_DEVTOOLS_GLOBAL_HOOK__){f="React";try{v=window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers&&window.__REACT_DEVTOOLS_GLOBAL_HOOK__.renderers.values().next().value.version||null}catch(e){}}' +
+    'else if(window.__VUE_DEVTOOLS_GLOBAL_HOOK__||window.__VUE__){f="Vue";v=window.__VUE__&&window.__VUE__.version||null}' +
+    'else if(document.querySelector("[ng-version]")){f="Angular";v=document.querySelector("[ng-version]").getAttribute("ng-version")}' +
+    'if(window.__NEXT_DATA__||document.querySelector("meta[name=next-head-count]"))m="Next.js";' +
+    'else if(window.__NUXT__||window.$nuxt)m="Nuxt";' +
+    'else if(window.__remixContext)m="Remix";' +
+    'else if(window.__sveltekit)m="SvelteKit";' +
+    'if(window.__REACT_QUERY_DEVTOOLS__)d="TanStack Query";' +
+    'else if(window.__APOLLO_CLIENT__)d="Apollo";' +
+    'else if(window.__SWR_DEVTOOLS__||window.__SWR_STORE__)d="SWR";' +
+    'return JSON.stringify({framework:f,version:v,metaFramework:m,dataLib:d})})()',
+    function(result) {
+      if (result) {
+        try {
+          var info = JSON.parse(result);
+          detectedFramework = info.framework;
+          detectedMetaFramework = info.metaFramework;
+          detectedDataLib = info.dataLib;
+        } catch(e) {}
+      }
+    }
+  );
 
   var btn = document.getElementById('scanBtn');
   btn.className = 'scan-btn stop'; btn.textContent = '■ STOP';
@@ -404,6 +432,29 @@ function analyze() {
     patternScore -= 3;
   }
 
+  // GraphQL duplicate detection
+  var graphqlDupes = [];
+  var gqlReqs = apiReqs.filter(function(r) { return r.type === 'api-graphql' && r.method === 'POST'; });
+  if (gqlReqs.length >= 2) {
+    var gqlOps = {};
+    gqlReqs.forEach(function(r) {
+      // Try to get operation from HAR body (may not always be available)
+      var op = r.urlParts.pathPattern || '/graphql';
+      var key = op + '|' + (r.bodySize || 0);
+      if (!gqlOps[key]) gqlOps[key] = [];
+      gqlOps[key].push(r);
+    });
+    Object.keys(gqlOps).forEach(function(key) {
+      var g = gqlOps[key];
+      if (g.length >= 2) {
+        var sorted = g.slice().sort(function(a,b) { return a.startTime - b.startTime; });
+        if (sorted[sorted.length-1].startTime - sorted[0].startTime <= 3000) {
+          graphqlDupes.push({ endpoint: key.split('|')[0], count: g.length, requests: g });
+        }
+      }
+    });
+  }
+
   effScore = Math.max(0, effScore);
   cacheScore = Math.max(0, cacheScore);
   patternScore = Math.max(0, patternScore);
@@ -420,6 +471,10 @@ function analyze() {
     requests: requests,
     apiRequests: apiReqs,
     metadata: { totalRequests: requests.length, apiRequests: apiReqs.length, duration: Math.round((Date.now() - scanStart) / 1000), pageUrl: pageUrl },
+    stack: {
+      framework: detectedFramework, version: null, metaFramework: detectedMetaFramework,
+      dataLibrary: detectedDataLib, graphqlDupes: graphqlDupes,
+    },
   };
 
   renderResults();
@@ -495,6 +550,17 @@ function renderOverview() {
   h += '<div class="score-gauge"><svg viewBox="0 0 100 100"><circle class="track" cx="50" cy="50" r="40"/><circle class="value" cx="50" cy="50" r="40" stroke-dasharray="' + dash + ' 251" style="stroke:' + color + '"/></svg><div class="num"><span class="n" style="color:' + color + '">' + s.overall + '</span><span class="g" style="color:' + color + '">' + s.grade + '</span></div></div>';
   h += '<div class="score-details"><h3>API Health Score</h3><div style="font-size:11px;color:var(--fg3)">' + r.metadata.apiRequests + ' API calls captured in ' + r.metadata.duration + 's</div>';
   if (r.metadata.pageUrl) h += '<div style="font-size:11px;color:var(--accent);margin-top:4px;word-break:break-all">📍 ' + esc(r.metadata.pageUrl) + '</div>';
+  // Detected stack
+  if (r.stack && r.stack.framework) {
+    var stackStr = '⚛️ ' + r.stack.framework;
+    if (r.stack.metaFramework) stackStr += ' (' + r.stack.metaFramework + ')';
+    if (r.stack.dataLibrary) stackStr += ' · ' + r.stack.dataLibrary;
+    h += '<div style="font-size:11px;color:var(--green);margin-top:3px">' + esc(stackStr) + '</div>';
+  }
+  // GraphQL dupes
+  if (r.stack && r.stack.graphqlDupes && r.stack.graphqlDupes.length > 0) {
+    h += '<div style="font-size:11px;color:var(--orange);margin-top:3px">🔄 ' + r.stack.graphqlDupes.length + ' duplicate GraphQL operation(s)</div>';
+  }
   h += '<div class="stat-grid">';
   h += '<div class="stat-card red"><div class="num">' + r.summary.criticalCount + '</div><div class="label">Critical</div></div>';
   h += '<div class="stat-card orange"><div class="num">' + r.summary.warningCount + '</div><div class="label">Warnings</div></div>';
@@ -685,6 +751,14 @@ function doExportHtml() {
   // Header
   html += '<h1><svg width="28" height="28" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#7c6afc"/><path d="M8 10h16M8 16h12M8 22h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg> FluxAPI Report</h1>';
   if (m.pageUrl) html += '<div style="font-size:13px;color:#7c6afc;margin-bottom:4px;word-break:break-all">📍 ' + esc(m.pageUrl) + '</div>';
+  // Detected stack in report
+  var st = report.stack || {};
+  if (st.framework) {
+    var stackLine = '⚛️ ' + st.framework;
+    if (st.metaFramework) stackLine += ' (' + st.metaFramework + ')';
+    if (st.dataLibrary) stackLine += ' &middot; ' + st.dataLibrary;
+    html += '<div style="font-size:13px;color:#34d399;margin-bottom:4px">' + stackLine + '</div>';
+  }
   html += '<div class="sub">' + ts + ' · ' + m.apiRequests + ' API calls · ' + m.duration + 's scan · Network: ' + esc(net) + '</div>';
 
   // Score + gauge
@@ -729,6 +803,16 @@ function doExportHtml() {
     html += '<div style="text-align:center;color:var(--green);padding:24px;font-size:18px;font-weight:700">✨ No API issues found!</div>';
   }
 
+  // GraphQL duplicates
+  var gd = (report.stack && report.stack.graphqlDupes) || [];
+  if (gd.length > 0) {
+    html += '<div class="section">GraphQL Duplicate Queries (' + gd.length + ')</div>';
+    gd.forEach(function(d) {
+      html += '<div class="card"><div class="card-head"><span class="sev sev-w"></span><span class="rule">GraphQL</span><span class="title">' + esc(d.endpoint) + ' &times;' + d.count + '</span></div>';
+      html += '<div class="desc">Same GraphQL operation fired ' + d.count + ' times within 3 seconds. Use cache-first fetch policy or extract a shared query hook.</div></div>';
+    });
+  }
+
   // Request table
   var apiReqs = report.apiRequests || [];
   if (apiReqs.length > 0) {
@@ -745,7 +829,7 @@ function doExportHtml() {
     html += '</tbody></table>';
   }
 
-  html += '<div class="footer">Generated by FluxAPI · ' + ts + '</div>';
+  html += '<div class="footer">Generated by FluxAPI v0.4.0 · ' + ts + '</div>';
   html += '</body></html>';
 
   var blob = new Blob([html], { type: 'text/html' });
@@ -757,6 +841,7 @@ function doExportHtml() {
 
 function doClear() {
   report = null; requests = [];
+  detectedFramework = null; detectedDataLib = null; detectedMetaFramework = null;
   document.getElementById('tabBar').style.display = 'none';
   document.getElementById('exportHtmlBtn').style.display = 'none'; document.getElementById('exportJsonBtn').style.display = 'none';
   document.getElementById('clearBtn').style.display = 'none';

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "FluxAPI — API Health Scanner",
-  "version": "0.3.0",
-  "description": "Lighthouse for your API calls. 13 audit rules detect waterfalls, duplicates, N+1, caching issues, polling waste, missing compression & more.",
+  "version": "0.4.0",
+  "description": "Lighthouse for your API calls. 13 audit rules, framework detection (React/Vue/Next.js/Nuxt/Angular), GraphQL dedup, WebSocket monitoring, and framework-aware fix code.",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",
