@@ -238,6 +238,31 @@ footer a{color:var(--fg3)}
   .pkg-grid{grid-template-columns:1fr 1fr}
 }
 
+/* ═══════════ BADGE GENERATOR ═══════════ */
+.badge-gen{
+  max-width:560px;margin:0 auto;background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:24px;
+}
+.badge-input-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.badge-input-row label{font-size:13px;font-weight:600;color:var(--fg2);white-space:nowrap}
+.badge-input-row input[type=range]{flex:1;accent-color:var(--accent)}
+.badge-score-num{font-size:20px;font-weight:900;font-family:var(--mono);width:36px;text-align:center}
+.badge-preview{text-align:center;padding:16px;background:var(--bg);border-radius:8px;border:1px solid var(--border);margin-bottom:16px}
+.badge-preview img{height:24px}
+.badge-outputs{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.badge-out-row{display:flex;align-items:center;gap:8px}
+.badge-out-label{font-size:10px;font-weight:700;color:var(--fg3);width:64px;text-transform:uppercase;letter-spacing:0.5px}
+.badge-out-code{
+  flex:1;font-size:10px;font-family:var(--mono);color:var(--fg2);background:var(--bg);
+  padding:5px 8px;border-radius:6px;border:1px solid var(--border);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.badge-out-copy{
+  background:var(--accent);color:white;border:none;padding:4px 12px;border-radius:6px;
+  font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);white-space:nowrap;
+}
+.badge-out-copy:hover{filter:brightness(1.15)}
+.badge-hint{font-size:11px;color:var(--fg3);text-align:center}
+
 /* ═══════════ DEMO REPORT ═══════════ */
 .demo-report{
   max-width:760px;margin:0 auto;background:#0c0c18;border:1px solid var(--border);border-radius:14px;overflow:hidden;
@@ -395,6 +420,7 @@ footer a{color:var(--fg3)}
     <a href="#install">Install</a>
     <a href="#use-cases">Use Cases</a>
     <a href="#scoring">Scoring</a>
+    <a href="#demo">Demo</a>
     <a href="https://www.npmjs.com/package/@fluxiapi/scan">npm</a>
     <a href="https://github.com/aswinsasi/fluxapi">GitHub</a>
   </div>
@@ -1180,6 +1206,36 @@ console.<span class="fn">log</span>(report.score.overall); <span class="cm">// 3
   </div>
 </section>
 
+<!-- Badge Generator -->
+<section class="section" id="badge">
+  <h2 class="section-title fade-in">Show your score</h2>
+  <p class="section-sub fade-in">Add a badge to your README. Every repo becomes a billboard.</p>
+
+  <div class="badge-gen fade-in">
+    <div class="badge-input-row">
+      <label>Your score:</label>
+      <input type="range" id="badgeScore" min="0" max="100" value="72" oninput="updateBadge()">
+      <span id="badgeScoreNum" class="badge-score-num">72</span>
+    </div>
+    <div class="badge-preview" id="badgePreview">
+      <img id="badgeImg" src="https://img.shields.io/badge/FluxAPI_Score-72%2F100-blue" alt="FluxAPI Score" />
+    </div>
+    <div class="badge-outputs">
+      <div class="badge-out-row">
+        <span class="badge-out-label">Markdown</span>
+        <code class="badge-out-code" id="badgeMd">![FluxAPI Score](https://img.shields.io/badge/FluxAPI_Score-72%2F100-blue)</code>
+        <button class="badge-out-copy" onclick="copyBadge('md')">Copy</button>
+      </div>
+      <div class="badge-out-row">
+        <span class="badge-out-label">HTML</span>
+        <code class="badge-out-code" id="badgeHtml">&lt;img src="https://img.shields.io/badge/FluxAPI_Score-72%2F100-blue" /&gt;</code>
+        <button class="badge-out-copy" onclick="copyBadge('html')">Copy</button>
+      </div>
+    </div>
+    <p class="badge-hint">Run <code style="color:var(--accent2)">npx flux-scan</code> → copy the badge line from the output → paste into README.md</p>
+  </div>
+</section>
+
 <!-- CTA -->
 <section class="cta-section">
   <h2 class="fade-in">Stop shipping slow APIs</h2>
@@ -1218,6 +1274,27 @@ function copyCode(btn, text) {
   btn.textContent = 'Copied!';
   setTimeout(() => btn.textContent = 'Copy', 1500);
 }
+// Badge generator
+function updateBadge() {
+  const score = parseInt(document.getElementById('badgeScore').value);
+  document.getElementById('badgeScoreNum').textContent = score;
+  const color = score >= 90 ? 'brightgreen' : score >= 70 ? 'blue' : score >= 50 ? 'yellow' : 'red';
+  const numEl = document.getElementById('badgeScoreNum');
+  numEl.style.color = color === 'brightgreen' ? 'var(--green)' : color === 'blue' ? 'var(--blue)' : color === 'yellow' ? 'var(--orange)' : 'var(--red)';
+  const url = `https://img.shields.io/badge/FluxAPI_Score-${score}%2F100-${color}`;
+  document.getElementById('badgeImg').src = url;
+  document.getElementById('badgeMd').textContent = `![FluxAPI Score](${url})`;
+  document.getElementById('badgeHtml').textContent = `<img src="${url}" />`;
+}
+function copyBadge(type) {
+  const el = document.getElementById(type === 'md' ? 'badgeMd' : 'badgeHtml');
+  navigator.clipboard.writeText(el.textContent);
+  const btn = event.currentTarget;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+updateBadge();
+
 // Demo report tabs
 function demoTab(name) {
   document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
@@ -1286,15 +1363,7 @@ function animateDemo() {
   }, 400);
 }
 
-// Add nav link for demo
-const demoNavLink = document.createElement('a');
-demoNavLink.href = '#demo';
-demoNavLink.textContent = 'Demo';
-const navLinks = document.querySelector('.nav-links');
-if (navLinks) {
-  const scoringLink = navLinks.querySelector('a[href="#scoring"]');
-  if (scoringLink) scoringLink.after(demoNavLink);
-}
+
 </script>
 </body>
 </html>

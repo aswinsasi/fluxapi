@@ -116,8 +116,36 @@ export function printReport(report: FluxReport): string {
     lines.push(`  ✨ No issues found — your API layer is clean!`);
   }
 
+  // Badge
+  lines.push('');
+  lines.push(`  📛 Add to your README:`);
+  lines.push(`    ${generateBadgeMarkdown(score.overall, score.grade)}`);
+
   lines.push('');
   return lines.join('\n');
+}
+
+/**
+ * Generate a shields.io badge URL for the score.
+ */
+export function generateBadgeUrl(score: number, grade?: string): string {
+  const color = score >= 90 ? 'brightgreen' : score >= 70 ? 'blue' : score >= 50 ? 'yellow' : 'red';
+  const label = 'FluxAPI';
+  const message = `${Math.round(score)}%2F100`;
+  // Encode the FluxAPI logo as a simple SVG data URI
+  const logo = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="%237c5cfc"/><path d="M8 10h16M8 16h12M8 22h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>');
+  return `https://img.shields.io/badge/${label}-${message}-${color}?style=flat&logo=${encodeURIComponent(logo)}`;
+}
+
+/**
+ * Generate a markdown badge string.
+ */
+export function generateBadgeMarkdown(score: number, grade?: string): string {
+  const color = score >= 90 ? 'brightgreen' : score >= 70 ? 'blue' : score >= 50 ? 'yellow' : 'red';
+  const label = 'FluxAPI_Score';
+  const message = `${Math.round(score)}%2F100`;
+  const url = `https://img.shields.io/badge/${label}-${message}-${color}`;
+  return `![FluxAPI Score](${url})`;
 }
 
 function categoryIcon(cat: string): string {

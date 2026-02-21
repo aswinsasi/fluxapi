@@ -132,7 +132,7 @@ export type { FixFramework } from './fixer/framework-fixes';
 
 // ─── Reporter (Week 3) ──────────────────────────────────────────
 export { generateHtmlReport, type ReportOptions } from './reporter/html-report';
-export { exportReportJson, printReport } from './reporter';
+export { exportReportJson, printReport, generateBadgeUrl, generateBadgeMarkdown } from './reporter';
 export { generateFix, generateFixes, type CodeFix } from './fixer';
 
 // ─── Utilities ──────────────────────────────────────────────────

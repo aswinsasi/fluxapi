@@ -149,6 +149,20 @@ function renderScoreSection(report: FluxReport): string {
           <div class="fx-stat-label">Auto-fixable</div>
         </div>
       </div>
+      <div class="fx-badge-section">
+        <div class="fx-badge-preview">
+          <img src="${badgeUrl(overall, grade)}" alt="FluxAPI Score" />
+        </div>
+        <div class="fx-badge-actions">
+          <button class="fx-badge-copy" onclick="fxCopyBadge('md')" title="Copy Markdown">📋 Markdown</button>
+          <button class="fx-badge-copy" onclick="fxCopyBadge('html')" title="Copy HTML">🔗 HTML</button>
+          <button class="fx-badge-copy" onclick="fxCopyBadge('url')" title="Copy URL">🌐 URL</button>
+        </div>
+        <input type="hidden" id="fx-badge-md" value="${escHtml(`![FluxAPI Score](${badgeUrl(overall, grade)})`)}" />
+        <input type="hidden" id="fx-badge-html" value='${`<a href="https://github.com/aswinsasi/fluxapi"><img src="${badgeUrl(overall, grade)}" alt="FluxAPI Score" /></a>`}' />
+        <input type="hidden" id="fx-badge-url" value="${badgeUrl(overall, grade)}" />
+        <div class="fx-badge-hint">Add this badge to your README — show your API health score</div>
+      </div>
     </section>`;
 }
 
@@ -567,6 +581,13 @@ function generateCss(): string {
     .fx-copy-btn { background: transparent; border: 1px solid #30363d; color: #8b949e; padding: 3px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
     .fx-copy-btn:hover { background: #21262d; color: #c9d1d9; }
     .fx-copy-btn.fx-copied { color: var(--green); border-color: var(--green); }
+    .fx-badge-section { margin-top: 20px; padding: 14px 16px; background: var(--bg2); border: 1px dashed #30363d; border-radius: 10px; text-align: center; }
+    .fx-badge-preview { margin-bottom: 8px; }
+    .fx-badge-preview img { height: 22px; }
+    .fx-badge-actions { display: flex; gap: 6px; justify-content: center; margin-bottom: 6px; }
+    .fx-badge-copy { background: transparent; border: 1px solid #30363d; color: #8b949e; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; transition: all 0.2s; font-family: inherit; }
+    .fx-badge-copy:hover { background: #21262d; color: #c9d1d9; }
+    .fx-badge-hint { font-size: 11px; color: #6b7280; }
     pre { background: var(--code-bg); color: var(--code-fg); padding: 14px; overflow-x: auto; font-size: 12.5px; line-height: 1.55; font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace; }
     code { font-family: inherit; }
     .fx-alt-code { margin-top: 8px; }
@@ -623,6 +644,25 @@ function generateJs(): string {
     // Auto-expand first failing audit
     const firstFail = document.querySelector('.fx-audit-fail');
     if (firstFail) firstFail.classList.add('fx-expanded');
+
+    // Badge copy
+    window.fxCopyBadge = function(type) {
+      const el = document.getElementById('fx-badge-' + type);
+      if (!el) return;
+      const text = el.value;
+      navigator.clipboard.writeText(text).then(() => {
+        const btns = document.querySelectorAll('.fx-badge-copy');
+        btns.forEach(b => { b.style.color = ''; b.style.borderColor = ''; });
+        event.target.style.color = '#34d399';
+        event.target.style.borderColor = '#34d399';
+        event.target.textContent = '✅ Copied!';
+        setTimeout(() => {
+          event.target.textContent = type === 'md' ? '📋 Markdown' : type === 'html' ? '🔗 HTML' : '🌐 URL';
+          event.target.style.color = '';
+          event.target.style.borderColor = '';
+        }, 2000);
+      });
+    };
   `;
 }
 
@@ -660,4 +700,9 @@ function categoryIcon(cat: string): string {
     case 'patterns': return '🔄';
     default: return '📊';
   }
+}
+
+function badgeUrl(score: number, grade: string): string {
+  const color = score >= 90 ? 'brightgreen' : score >= 70 ? 'blue' : score >= 50 ? 'yellow' : 'red';
+  return `https://img.shields.io/badge/FluxAPI_Score-${Math.round(score)}%2F100-${color}`;
 }

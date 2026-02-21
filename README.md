@@ -7,6 +7,7 @@
 [![npm version](https://img.shields.io/npm/v/@fluxiapi/vue)](https://www.npmjs.com/package/@fluxiapi/vue)
 [![npm version](https://img.shields.io/npm/v/@fluxiapi/react)](https://www.npmjs.com/package/@fluxiapi/react)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![FluxAPI Score](https://img.shields.io/badge/FluxAPI_Score-82%2F100-blue)
 
 ```bash
 npx flux-scan https://your-app.com -o report.html
