@@ -238,6 +238,142 @@ footer a{color:var(--fg3)}
   .pkg-grid{grid-template-columns:1fr 1fr}
 }
 
+/* ═══════════ DEMO REPORT ═══════════ */
+.demo-report{
+  max-width:760px;margin:0 auto;background:#0c0c18;border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  box-shadow:0 20px 80px rgba(0,0,0,0.4),0 0 60px rgba(124,92,252,0.06);
+  font-size:12px;
+}
+.demo-header{padding:12px 16px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)}
+.demo-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px;margin-bottom:6px}
+.demo-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--fg3);font-family:var(--mono)}
+.demo-tabs{display:flex;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01)}
+.demo-tab{
+  padding:8px 18px;font-size:12px;font-weight:600;color:var(--fg3);background:none;border:none;
+  cursor:pointer;font-family:var(--font);position:relative;transition:color .15s;
+}
+.demo-tab:hover{color:var(--fg2)}
+.demo-tab.active{color:var(--accent2)}
+.demo-tab.active::after{content:'';position:absolute;bottom:-1px;left:8px;right:8px;height:2px;background:var(--accent);border-radius:2px 2px 0 0}
+.demo-badge-count{
+  display:inline-block;margin-left:4px;padding:0 6px;border-radius:99px;font-size:10px;font-weight:700;
+  background:rgba(248,113,113,0.12);color:var(--red);
+}
+.demo-panel{display:none;padding:16px;max-height:520px;overflow-y:auto}
+.demo-panel.active{display:block}
+.demo-panel::-webkit-scrollbar{width:5px}
+.demo-panel::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:99px}
+
+/* Overview */
+.demo-score-row{display:flex;gap:20px;align-items:flex-start;margin-bottom:16px}
+.demo-gauge{position:relative;width:90px;height:90px;flex-shrink:0}
+.demo-gauge svg{width:100%;height:100%}
+.demo-gauge-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.demo-score-val{font-size:28px;font-weight:900;color:var(--red)}
+.demo-score-grade{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.demo-score-info h3{font-size:15px;font-weight:700;margin-bottom:2px}
+.demo-score-info p{font-size:11px;color:var(--fg3);margin-bottom:8px}
+.demo-stats{display:flex;gap:8px}
+.demo-stat{
+  background:var(--bg3);border-radius:8px;padding:6px 12px;text-align:center;
+  border:1px solid var(--border);
+}
+.demo-stat-num{display:block;font-size:18px;font-weight:900;color:var(--c)}
+.demo-stat-label{font-size:9px;color:var(--fg3);text-transform:uppercase;letter-spacing:0.3px}
+
+.demo-impact{
+  display:flex;gap:12px;padding:10px;border-radius:10px;margin-bottom:16px;
+  background:linear-gradient(135deg,rgba(124,92,252,0.06),rgba(34,211,238,0.04));
+  border:1px solid rgba(124,92,252,0.12);
+}
+.demo-impact-item{flex:1;text-align:center}
+.demo-impact-item span{display:block;font-size:16px;font-weight:900}
+.demo-impact-item small{font-size:9px;color:var(--fg3);text-transform:uppercase;letter-spacing:0.3px}
+
+.demo-cats{margin-bottom:16px}
+.demo-cat-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.demo-cat-icon{width:18px;text-align:center;font-size:12px}
+.demo-cat-name{width:70px;font-size:11px;font-weight:600;color:var(--fg2)}
+.demo-cat-track{flex:1;height:6px;background:var(--bg3);border-radius:99px;overflow:hidden}
+.demo-cat-fill{height:100%;border-radius:99px;transition:width 1.2s cubic-bezier(0.4,0,0.2,1)}
+.demo-cat-pct{width:36px;text-align:right;font-size:11px;font-weight:800;font-family:var(--mono)}
+
+.demo-top-issues h4{font-size:11px;font-weight:700;color:var(--fg2);margin-bottom:6px}
+.demo-issue-row{
+  display:flex;align-items:center;gap:6px;padding:5px 0;cursor:pointer;transition:background .15s;
+  border-radius:4px;padding:4px 6px;margin:0 -6px;
+}
+.demo-issue-row:hover{background:rgba(255,255,255,0.02)}
+.demo-sev{width:6px;height:6px;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px currentColor}
+.demo-rule-id{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--fg3);width:20px}
+.demo-issue-title{flex:1;font-size:11px}
+.demo-impact-pill{font-size:10px;color:var(--blue);font-family:var(--mono);font-weight:700}
+.demo-hint{font-size:11px;color:var(--accent2);cursor:pointer;margin-top:6px;text-align:center;padding:4px}
+.demo-hint:hover{text-decoration:underline}
+
+/* Violations */
+.demo-v-card{
+  background:rgba(255,255,255,0.01);border:1px solid var(--border);border-radius:8px;
+  margin-bottom:6px;overflow:hidden;transition:border-color .2s;
+}
+.demo-v-card:hover{border-color:rgba(124,92,252,0.2)}
+.demo-v-card.expanded{border-color:var(--accent)}
+.demo-v-card.expanded .demo-v-expand{display:block}
+.demo-v-head{display:flex;align-items:center;gap:6px;padding:8px 10px;cursor:pointer;flex-wrap:wrap}
+.demo-v-ruleid{font-family:var(--mono);font-size:10px;font-weight:800;color:var(--fg3)}
+.demo-v-name{font-size:10px;color:var(--fg3);font-weight:600}
+.demo-v-title{flex:1;font-size:11px;font-weight:600;min-width:150px}
+.demo-v-pills{display:flex;gap:4px;margin-left:auto}
+.demo-v-pill{font-size:9px;font-family:var(--mono);font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,0.03)}
+.demo-v-expand{display:none;padding:0 10px 10px}
+.demo-v-desc{font-size:11px;color:var(--fg3);line-height:1.6;margin-bottom:8px}
+.demo-v-fix{background:var(--bg);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.demo-v-fix-head{
+  display:flex;align-items:center;padding:4px 8px;background:rgba(255,255,255,0.02);
+  border-bottom:1px solid var(--border);font-size:10px;color:var(--fg3);
+}
+.demo-v-fix-head button{
+  margin-left:auto;background:none;border:1px solid var(--border);color:var(--fg3);
+  padding:1px 8px;border-radius:4px;font-size:9px;cursor:pointer;font-family:var(--font);
+}
+.demo-v-fix-head button:hover{color:var(--fg)}
+.demo-v-fix pre{padding:8px;font-size:11px;font-family:var(--mono);line-height:1.6;color:var(--fg2);overflow-x:auto;white-space:pre;margin:0}
+
+/* Requests table */
+.demo-req-table{width:100%;border-collapse:collapse}
+.demo-req-table th{text-align:left;padding:4px 8px;font-size:10px;color:var(--fg3);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);font-weight:700}
+.demo-req-table td{padding:3px 8px;font-size:11px;font-family:var(--mono);border-bottom:1px solid var(--border);white-space:nowrap}
+.demo-req-table tr:hover td{background:rgba(255,255,255,0.015)}
+.demo-method{color:var(--accent2);font-weight:700}
+.demo-ok{color:var(--green)}
+.demo-dur{color:var(--orange)}
+.demo-cache-tag{font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(52,211,153,0.1);color:var(--green)}
+.demo-cache-none{color:var(--red);font-size:10px}
+
+/* Timeline */
+.demo-wf-row{display:flex;align-items:center;gap:6px;margin-bottom:3px;height:16px}
+.demo-wf-label{width:130px;font-size:10px;font-family:var(--mono);color:var(--fg3);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.demo-wf-track{flex:1;height:8px;position:relative;background:rgba(255,255,255,0.015);border-radius:2px}
+.demo-wf-bar{position:absolute;height:100%;border-radius:2px;min-width:3px}
+.demo-wf-bar.api{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.demo-wf-bar.dup{background:var(--red)}
+.demo-wf-bar.n1{background:var(--orange)}
+.demo-wf-bar.poll{background:var(--cyan);opacity:0.7}
+.demo-wf-time{width:40px;font-size:10px;font-family:var(--mono);color:var(--fg3)}
+.demo-wf-legend{display:flex;gap:16px;justify-content:center;margin-top:12px;font-size:10px;color:var(--fg3)}
+.demo-wf-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+
+@media(max-width:640px){
+  .demo-score-row{flex-direction:column;align-items:center;text-align:center}
+  .demo-stats{justify-content:center}
+  .demo-impact{flex-direction:column;gap:8px}
+  .demo-v-head{flex-wrap:wrap}
+  .demo-v-title{min-width:100%;margin-top:4px}
+  .demo-wf-label{width:80px;font-size:9px}
+  .demo-meta{flex-direction:column;gap:4px}
+  .demo-req-table{font-size:10px}
+}
+
 /* ═══════════ ANIMATIONS ═══════════ */
 .fade-in{opacity:0;transform:translateY(20px);transition:all .6s ease}
 .fade-in.visible{opacity:1;transform:translateY(0)}
@@ -443,6 +579,348 @@ footer a{color:var(--fg3)}
         <div class="gauge-num" style="color:var(--red)">30</div>
       </div>
       <div class="gauge-label">BSNL 2G</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ LIVE DEMO REPORT ═══════════ -->
+<section class="section" id="demo">
+  <h2 class="section-title fade-in">See a real report</h2>
+  <p class="section-sub fade-in">This is what FluxAPI finds when scanning a typical Next.js e-commerce app on Jio 4G</p>
+
+  <div class="demo-report fade-in" id="demoReport">
+    <!-- Report Header -->
+    <div class="demo-header">
+      <div class="demo-logo">
+        <svg width="18" height="18" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#7c5cfc"/><path d="M8 10h16M8 16h12M8 22h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>
+        FluxAPI Report
+      </div>
+      <div class="demo-meta">
+        <span>📍 nextshop.vercel.app</span>
+        <span>⚛️ React 18 (Next.js) · TanStack Query</span>
+        <span>📡 Jio 4G · 32s scan</span>
+      </div>
+    </div>
+
+    <!-- Report Tabs -->
+    <div class="demo-tabs">
+      <button class="demo-tab active" onclick="demoTab('overview')">Overview</button>
+      <button class="demo-tab" onclick="demoTab('violations')">Issues <span class="demo-badge-count">7</span></button>
+      <button class="demo-tab" onclick="demoTab('requests')">Requests <span class="demo-badge-count" style="background:rgba(96,165,250,0.15);color:var(--blue)">18</span></button>
+      <button class="demo-tab" onclick="demoTab('timeline')">Timeline</button>
+    </div>
+
+    <!-- Overview Panel -->
+    <div class="demo-panel active" id="demo-overview">
+      <div class="demo-score-row">
+        <div class="demo-gauge">
+          <svg viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--bg3)" stroke-width="7"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="var(--red)" stroke-width="7" stroke-linecap="round"
+              stroke-dasharray="0 251" style="transform:rotate(-90deg);transform-origin:center" id="demoGaugeArc"/>
+          </svg>
+          <div class="demo-gauge-num">
+            <span class="demo-score-val" id="demoScoreNum">0</span>
+            <span class="demo-score-grade" style="color:var(--red)">poor</span>
+          </div>
+        </div>
+        <div class="demo-score-info">
+          <h3>API Health Score</h3>
+          <p>18 API calls · Jio 4G · 32s scan</p>
+          <div class="demo-stats">
+            <div class="demo-stat" style="--c:var(--red)"><span class="demo-stat-num">4</span><span class="demo-stat-label">Critical</span></div>
+            <div class="demo-stat" style="--c:var(--orange)"><span class="demo-stat-num">2</span><span class="demo-stat-label">Warnings</span></div>
+            <div class="demo-stat" style="--c:var(--blue)"><span class="demo-stat-num">1</span><span class="demo-stat-label">Info</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Impact Banner -->
+      <div class="demo-impact">
+        <div class="demo-impact-item"><span style="color:var(--blue)">⚡ 3.4s</span><small>Time Saved</small></div>
+        <div class="demo-impact-item"><span style="color:var(--green)">📉 31</span><small>Fewer Requests</small></div>
+        <div class="demo-impact-item"><span style="color:var(--orange)">💾 142KB</span><small>Bandwidth</small></div>
+      </div>
+
+      <!-- Category Bars -->
+      <div class="demo-cats">
+        <div class="demo-cat-row">
+          <span class="demo-cat-icon">⚡</span>
+          <span class="demo-cat-name">Efficiency</span>
+          <div class="demo-cat-track"><div class="demo-cat-fill" id="demoCatEff" style="width:0%;background:var(--red)"></div></div>
+          <span class="demo-cat-pct" style="color:var(--red)">25%</span>
+        </div>
+        <div class="demo-cat-row">
+          <span class="demo-cat-icon">💾</span>
+          <span class="demo-cat-name">Caching</span>
+          <div class="demo-cat-track"><div class="demo-cat-fill" id="demoCatCache" style="width:0%;background:var(--orange)"></div></div>
+          <span class="demo-cat-pct" style="color:var(--orange)">50%</span>
+        </div>
+        <div class="demo-cat-row">
+          <span class="demo-cat-icon">🔄</span>
+          <span class="demo-cat-name">Patterns</span>
+          <div class="demo-cat-track"><div class="demo-cat-fill" id="demoCatPat" style="width:0%;background:var(--orange)"></div></div>
+          <span class="demo-cat-pct" style="color:var(--orange)">65%</span>
+        </div>
+      </div>
+
+      <!-- Top Issues Preview -->
+      <div class="demo-top-issues">
+        <h4>Top Issues</h4>
+        <div class="demo-issue-row" onclick="demoTab('violations')">
+          <span class="demo-sev" style="background:var(--red)"></span>
+          <span class="demo-rule-id">E2</span>
+          <span class="demo-issue-title">GET /api/user called 4× from 4 components</span>
+          <span class="demo-impact-pill">⚡600ms</span>
+        </div>
+        <div class="demo-issue-row" onclick="demoTab('violations')">
+          <span class="demo-sev" style="background:var(--red)"></span>
+          <span class="demo-rule-id">E3</span>
+          <span class="demo-issue-title">N+1: 25× GET /api/products/:id</span>
+          <span class="demo-impact-pill">⚡2.1s</span>
+        </div>
+        <div class="demo-issue-row" onclick="demoTab('violations')">
+          <span class="demo-sev" style="background:var(--red)"></span>
+          <span class="demo-rule-id">E1</span>
+          <span class="demo-issue-title">4 sequential requests (waterfall)</span>
+          <span class="demo-impact-pill">⚡480ms</span>
+        </div>
+        <div class="demo-hint" onclick="demoTab('violations')">Click to see all 7 issues with fix code →</div>
+      </div>
+    </div>
+
+    <!-- Violations Panel -->
+    <div class="demo-panel" id="demo-violations">
+      <!-- V1 -->
+      <div class="demo-v-card" id="dv0">
+        <div class="demo-v-head" onclick="toggleDemoV('dv0')">
+          <span class="demo-sev" style="background:var(--red)"></span>
+          <span class="demo-v-ruleid">E2</span>
+          <span class="demo-v-name">Duplicate Requests</span>
+          <span class="demo-v-title">GET /api/user called 4× from 4 components</span>
+          <div class="demo-v-pills">
+            <span class="demo-v-pill" style="color:var(--blue)">⚡600ms</span>
+            <span class="demo-v-pill" style="color:var(--green)">📉 3 reqs</span>
+          </div>
+        </div>
+        <div class="demo-v-expand">
+          <p class="demo-v-desc">Same endpoint hit 4 times within 120ms. Header, Sidebar, ProfileCard, and NotificationBell each call GET /api/user independently. Extract a shared useQuery hook.</p>
+          <div class="demo-v-fix">
+            <div class="demo-v-fix-head"><span>Fix — TanStack Query</span><button onclick="copyDemoFix(this,'e2')">Copy</button></div>
+<pre id="demofix-e2"><span class="cm">// hooks/useUser.ts — shared across components</span>
+<span class="kw">export function</span> <span class="fn">useUser</span>() {
+  <span class="kw">return</span> <span class="fn">useQuery</span>({
+    <span class="fn">queryKey</span>: [<span class="str">'user'</span>],
+    <span class="fn">queryFn</span>: () <span class="kw">=&gt;</span> <span class="fn">fetch</span>(<span class="str">'/api/user'</span>).<span class="fn">then</span>(r <span class="kw">=&gt;</span> r.<span class="fn">json</span>()),
+    <span class="fn">staleTime</span>: <span class="num">30_000</span>,
+  });
+}</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- V2 -->
+      <div class="demo-v-card" id="dv1">
+        <div class="demo-v-head" onclick="toggleDemoV('dv1')">
+          <span class="demo-sev" style="background:var(--red)"></span>
+          <span class="demo-v-ruleid">E3</span>
+          <span class="demo-v-name">N+1 Pattern</span>
+          <span class="demo-v-title">25× GET /api/products/:id</span>
+          <div class="demo-v-pills">
+            <span class="demo-v-pill" style="color:var(--blue)">⚡2.1s</span>
+            <span class="demo-v-pill" style="color:var(--green)">📉 24 reqs</span>
+          </div>
+        </div>
+        <div class="demo-v-expand">
+          <p class="demo-v-desc">Product listing page fires 25 individual requests to parameterized endpoint. Classic N+1 — each product card fetches its own data instead of one batch call.</p>
+          <div class="demo-v-fix">
+            <div class="demo-v-fix-head"><span>Fix — Batch Endpoint</span><button onclick="copyDemoFix(this,'e3')">Copy</button></div>
+<pre id="demofix-e3"><span class="cm">// Replace 25 individual calls with one batch</span>
+<span class="kw">const</span> products = <span class="kw">await</span> <span class="fn">fetch</span>(
+  <span class="str">'/api/products?ids=1,2,3,4,...25'</span>
+).<span class="fn">then</span>(r <span class="kw">=&gt;</span> r.<span class="fn">json</span>());</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- V3 -->
+      <div class="demo-v-card" id="dv2">
+        <div class="demo-v-head" onclick="toggleDemoV('dv2')">
+          <span class="demo-sev" style="background:var(--red)"></span>
+          <span class="demo-v-ruleid">E1</span>
+          <span class="demo-v-name">Request Waterfall</span>
+          <span class="demo-v-title">4 sequential requests (waterfall)</span>
+          <div class="demo-v-pills">
+            <span class="demo-v-pill" style="color:var(--blue)">⚡480ms</span>
+          </div>
+        </div>
+        <div class="demo-v-expand">
+          <p class="demo-v-desc">4 API calls run one after another with no data dependency. /api/config → /api/user → /api/cart → /api/recommendations. These could all run in parallel.</p>
+          <div class="demo-v-fix">
+            <div class="demo-v-fix-head"><span>Fix — TanStack Query</span><button onclick="copyDemoFix(this,'e1')">Copy</button></div>
+<pre id="demofix-e1"><span class="kw">import</span> { <span class="fn">useSuspenseQueries</span> } <span class="kw">from</span> <span class="str">'@tanstack/react-query'</span>;
+
+<span class="kw">const</span> results = <span class="fn">useSuspenseQueries</span>({
+  <span class="fn">queries</span>: [
+    { <span class="fn">queryKey</span>: [<span class="str">'config'</span>], <span class="fn">queryFn</span>: fetchConfig },
+    { <span class="fn">queryKey</span>: [<span class="str">'user'</span>], <span class="fn">queryFn</span>: fetchUser },
+    { <span class="fn">queryKey</span>: [<span class="str">'cart'</span>], <span class="fn">queryFn</span>: fetchCart },
+    { <span class="fn">queryKey</span>: [<span class="str">'recs'</span>], <span class="fn">queryFn</span>: fetchRecs },
+  ]
+});</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- V4 -->
+      <div class="demo-v-card" id="dv3">
+        <div class="demo-v-head" onclick="toggleDemoV('dv3')">
+          <span class="demo-sev" style="background:var(--red)"></span>
+          <span class="demo-v-ruleid">C1</span>
+          <span class="demo-v-name">No Cache Strategy</span>
+          <span class="demo-v-title">No cache: /api/categories (3×)</span>
+          <div class="demo-v-pills">
+            <span class="demo-v-pill" style="color:var(--green)">📉 2 reqs</span>
+            <span class="demo-v-pill" style="color:var(--orange)">💾 48KB</span>
+          </div>
+        </div>
+        <div class="demo-v-expand">
+          <p class="demo-v-desc">No Cache-Control, ETag, or Last-Modified header. Categories rarely change but every page navigation refetches from network.</p>
+          <div class="demo-v-fix">
+            <div class="demo-v-fix-head"><span>Fix — staleTime</span><button onclick="copyDemoFix(this,'c1')">Copy</button></div>
+<pre id="demofix-c1"><span class="fn">useQuery</span>({
+  <span class="fn">queryKey</span>: [<span class="str">'categories'</span>],
+  <span class="fn">queryFn</span>: fetchCategories,
+  <span class="fn">staleTime</span>: <span class="num">5 * 60_000</span>,  <span class="cm">// 5 minutes</span>
+  <span class="fn">gcTime</span>: <span class="num">10 * 60_000</span>,     <span class="cm">// 10 minutes</span>
+});</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- V5 -->
+      <div class="demo-v-card" id="dv4">
+        <div class="demo-v-head" onclick="toggleDemoV('dv4')">
+          <span class="demo-sev" style="background:var(--orange)"></span>
+          <span class="demo-v-ruleid">E4</span>
+          <span class="demo-v-name">Over-fetching</span>
+          <span class="demo-v-title">87KB response: /api/products (list view)</span>
+          <div class="demo-v-pills">
+            <span class="demo-v-pill" style="color:var(--orange)">💾 52KB</span>
+          </div>
+        </div>
+        <div class="demo-v-expand">
+          <p class="demo-v-desc">Product list endpoint returns full product objects (description, specs, reviews, related items) but the list view only uses name, price, image, and rating.</p>
+          <div class="demo-v-fix">
+            <div class="demo-v-fix-head"><span>Fix — Sparse Fields</span><button onclick="copyDemoFix(this,'e4')">Copy</button></div>
+<pre id="demofix-e4"><span class="fn">fetch</span>(<span class="str">'/api/products?fields=id,name,price,image,rating'</span>)</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- V6 -->
+      <div class="demo-v-card" id="dv5">
+        <div class="demo-v-head" onclick="toggleDemoV('dv5')">
+          <span class="demo-sev" style="background:var(--orange)"></span>
+          <span class="demo-v-ruleid">P2</span>
+          <span class="demo-v-name">Unnecessary Polling</span>
+          <span class="demo-v-title">Polling /api/notifications every 3s (92% wasted)</span>
+          <div class="demo-v-pills">
+            <span class="demo-v-pill" style="color:var(--green)">📉 9 reqs</span>
+          </div>
+        </div>
+        <div class="demo-v-expand">
+          <p class="demo-v-desc">92% of polls return identical data. Notifications update once every ~40 seconds on average but the app polls every 3 seconds.</p>
+          <div class="demo-v-fix">
+            <div class="demo-v-fix-head"><span>Fix — Longer Interval</span><button onclick="copyDemoFix(this,'p2')">Copy</button></div>
+<pre id="demofix-p2"><span class="fn">useQuery</span>({
+  <span class="fn">queryKey</span>: [<span class="str">'notifications'</span>],
+  <span class="fn">queryFn</span>: fetchNotifications,
+  <span class="fn">refetchInterval</span>: <span class="num">15_000</span>,  <span class="cm">// 15s instead of 3s</span>
+});</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- V7 -->
+      <div class="demo-v-card" id="dv6">
+        <div class="demo-v-head" onclick="toggleDemoV('dv6')">
+          <span class="demo-sev" style="background:var(--blue)"></span>
+          <span class="demo-v-ruleid">P4</span>
+          <span class="demo-v-name">Uncompressed</span>
+          <span class="demo-v-title">6 responses without gzip/brotli (~42KB)</span>
+          <div class="demo-v-pills">
+            <span class="demo-v-pill" style="color:var(--orange)">💾 29KB</span>
+          </div>
+        </div>
+        <div class="demo-v-expand">
+          <p class="demo-v-desc">6 JSON responses over 1KB have no content-encoding. Gzip compression typically saves 60-80% on JSON payloads.</p>
+          <div class="demo-v-fix">
+            <div class="demo-v-fix-head"><span>Fix — Server Config</span><button onclick="copyDemoFix(this,'p4')">Copy</button></div>
+<pre id="demofix-p4"><span class="cm">// next.config.js</span>
+module.exports = {
+  <span class="fn">compress</span>: <span class="num">true</span>,  <span class="cm">// enabled by default in Next.js</span>
+}
+
+<span class="cm">// Or Nginx:</span>
+<span class="fn">gzip</span> on;
+<span class="fn">gzip_types</span> application/json;</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Requests Panel -->
+    <div class="demo-panel" id="demo-requests">
+      <table class="demo-req-table">
+        <thead>
+          <tr><th>Method</th><th>Path</th><th>Status</th><th>Duration</th><th>Size</th><th>Cache</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="demo-method">GET</td><td>/api/config</td><td class="demo-ok">200</td><td class="demo-dur">45ms</td><td>1.2KB</td><td><span class="demo-cache-tag">max-age=3600</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/user</td><td class="demo-ok">200</td><td class="demo-dur">82ms</td><td>3.4KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/user</td><td class="demo-ok">200</td><td class="demo-dur">78ms</td><td>3.4KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/user</td><td class="demo-ok">200</td><td class="demo-dur">91ms</td><td>3.4KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/user</td><td class="demo-ok">200</td><td class="demo-dur">76ms</td><td>3.4KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/cart</td><td class="demo-ok">200</td><td class="demo-dur">120ms</td><td>2.8KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/categories</td><td class="demo-ok">200</td><td class="demo-dur">68ms</td><td>16KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/categories</td><td class="demo-ok">200</td><td class="demo-dur">72ms</td><td>16KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/categories</td><td class="demo-ok">200</td><td class="demo-dur">65ms</td><td>16KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/products</td><td class="demo-ok">200</td><td class="demo-dur">210ms</td><td>87KB</td><td><span class="demo-cache-tag">max-age=60</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/products/1</td><td class="demo-ok">200</td><td class="demo-dur">48ms</td><td>4.2KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/products/2</td><td class="demo-ok">200</td><td class="demo-dur">52ms</td><td>3.9KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/products/3</td><td class="demo-ok">200</td><td class="demo-dur">61ms</td><td>4.5KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr style="color:var(--fg3)"><td colspan="6" style="text-align:center;font-style:italic;font-size:11px">... +12 more /api/products/:id requests (N+1 pattern)</td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/recommendations</td><td class="demo-ok">200</td><td class="demo-dur">180ms</td><td>12KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/notifications</td><td class="demo-ok">200</td><td class="demo-dur">35ms</td><td>1.8KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/notifications</td><td class="demo-ok">200</td><td class="demo-dur">38ms</td><td>1.8KB</td><td><span class="demo-cache-none">none</span></td></tr>
+          <tr><td class="demo-method">GET</td><td>/api/notifications</td><td class="demo-ok">200</td><td class="demo-dur">32ms</td><td>1.8KB</td><td><span class="demo-cache-none">none</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Timeline Panel -->
+    <div class="demo-panel" id="demo-timeline">
+      <div style="font-size:11px;color:var(--fg3);margin-bottom:10px;font-family:var(--mono)">Request Timeline (2.4s total)</div>
+      <div class="demo-wf" id="demoWaterfall">
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/config</span><div class="demo-wf-track"><div class="demo-wf-bar api" style="left:0%;width:3%"></div></div><span class="demo-wf-time">45ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/user ×4</span><div class="demo-wf-track"><div class="demo-wf-bar dup" style="left:3%;width:6%"></div></div><span class="demo-wf-time">82ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/cart</span><div class="demo-wf-track"><div class="demo-wf-bar api" style="left:10%;width:8%"></div></div><span class="demo-wf-time">120ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/categories ×3</span><div class="demo-wf-track"><div class="demo-wf-bar dup" style="left:19%;width:5%"></div></div><span class="demo-wf-time">68ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/products</span><div class="demo-wf-track"><div class="demo-wf-bar api" style="left:25%;width:14%"></div></div><span class="demo-wf-time">210ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/products/1</span><div class="demo-wf-track"><div class="demo-wf-bar n1" style="left:40%;width:3%"></div></div><span class="demo-wf-time">48ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/products/2</span><div class="demo-wf-track"><div class="demo-wf-bar n1" style="left:43.5%;width:3.5%"></div></div><span class="demo-wf-time">52ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/products/3</span><div class="demo-wf-track"><div class="demo-wf-bar n1" style="left:47.5%;width:4%"></div></div><span class="demo-wf-time">61ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label" style="color:var(--fg3)">... ×22 more</span><div class="demo-wf-track"><div class="demo-wf-bar n1" style="left:52%;width:28%;opacity:0.4"></div></div><span class="demo-wf-time">~1.1s</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/recommendations</span><div class="demo-wf-track"><div class="demo-wf-bar api" style="left:82%;width:12%"></div></div><span class="demo-wf-time">180ms</span></div>
+        <div class="demo-wf-row"><span class="demo-wf-label">/api/notifications</span><div class="demo-wf-track"><div class="demo-wf-bar poll" style="left:10%;width:2%"></div><div class="demo-wf-bar poll" style="left:35%;width:2%"></div><div class="demo-wf-bar poll" style="left:60%;width:2%"></div></div><span class="demo-wf-time">3s int</span></div>
+      </div>
+      <div class="demo-wf-legend">
+        <span><span class="demo-wf-dot" style="background:linear-gradient(90deg,var(--accent),var(--accent2))"></span>API call</span>
+        <span><span class="demo-wf-dot" style="background:var(--red)"></span>Duplicate</span>
+        <span><span class="demo-wf-dot" style="background:var(--orange)"></span>N+1</span>
+        <span><span class="demo-wf-dot" style="background:var(--cyan)"></span>Polling</span>
+      </div>
     </div>
   </div>
 </section>
@@ -739,6 +1217,83 @@ function copyCode(btn, text) {
   navigator.clipboard.writeText(text);
   btn.textContent = 'Copied!';
   setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+// Demo report tabs
+function demoTab(name) {
+  document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.demo-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('demo-' + name).classList.add('active');
+  document.querySelectorAll('.demo-tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(name.slice(0, 4))) t.classList.add('active');
+  });
+}
+
+// Toggle violation expand
+function toggleDemoV(id) {
+  document.getElementById(id).classList.toggle('expanded');
+}
+
+// Copy fix code
+function copyDemoFix(btn, id) {
+  const el = document.getElementById('demofix-' + id);
+  const text = el.textContent || el.innerText;
+  navigator.clipboard.writeText(text);
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+
+// Animate demo report on scroll
+const demoObs = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting && !entry.target.dataset.animated) {
+      entry.target.dataset.animated = '1';
+      animateDemo();
+    }
+  });
+}, { threshold: 0.2 });
+
+const demoEl = document.getElementById('demoReport');
+if (demoEl) demoObs.observe(demoEl);
+
+function animateDemo() {
+  // Animate score gauge
+  const arc = document.getElementById('demoGaugeArc');
+  const numEl = document.getElementById('demoScoreNum');
+  const targetScore = 38;
+  const circumference = 2 * Math.PI * 40;
+  const targetDash = (targetScore / 100) * circumference;
+
+  setTimeout(() => {
+    arc.style.transition = 'stroke-dasharray 1.5s cubic-bezier(0.4,0,0.2,1)';
+    arc.setAttribute('stroke-dasharray', targetDash + ' ' + circumference);
+  }, 200);
+
+  // Animate score number
+  let current = 0;
+  const step = () => {
+    current += 1;
+    if (current > targetScore) current = targetScore;
+    numEl.textContent = current;
+    if (current < targetScore) requestAnimationFrame(step);
+  };
+  setTimeout(step, 300);
+
+  // Animate category bars
+  setTimeout(() => {
+    document.getElementById('demoCatEff').style.width = '25%';
+    document.getElementById('demoCatCache').style.width = '50%';
+    document.getElementById('demoCatPat').style.width = '65%';
+  }, 400);
+}
+
+// Add nav link for demo
+const demoNavLink = document.createElement('a');
+demoNavLink.href = '#demo';
+demoNavLink.textContent = 'Demo';
+const navLinks = document.querySelector('.nav-links');
+if (navLinks) {
+  const scoringLink = navLinks.querySelector('a[href="#scoring"]');
+  if (scoringLink) scoringLink.after(demoNavLink);
 }
 </script>
 </body>
