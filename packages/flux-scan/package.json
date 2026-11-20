@@ -1,6 +1,6 @@
 {
   "name": "flux-scan",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "npx flux-scan — unscoped alias for @fluxiapi/cli. Scan any URL for API anti-patterns.",
   "author": "Aswin <aswin@fluxapi.dev>",
   "license": "MIT",
@@ -23,7 +23,7 @@
     "README.md"
   ],
   "dependencies": {
-    "@fluxiapi/cli": "^0.4.1"
+    "@fluxiapi/cli": "^0.4.2"
   },
   "keywords": ["fluxapi", "api", "scanner", "cli", "performance", "flux-scan"],
   "engines": {
