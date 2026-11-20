@@ -11,6 +11,17 @@ import type {
   NetworkProfile,
 } from '@fluxiapi/scan';
 
+// ─── Violation Extraction ───────────────────────────────────────
+
+/**
+ * Flatten per-rule violations out of a report.
+ * Violations live at report.score.audits[].violations — there is no
+ * top-level report.violations field.
+ */
+function extractViolations(report: FluxReport | null): RuleViolation[] {
+  return report?.score?.audits?.flatMap((a) => a.violations) ?? [];
+}
+
 // ─── Types ──────────────────────────────────────────────────────
 
 export interface FluxState {
@@ -155,7 +166,7 @@ export class ScannerBridge {
       scanning: false,
       report,
       score: report?.score?.overall ?? 100,
-      violations: report?.violations ?? [],
+      violations: extractViolations(report),
       framework: session?.stack?.framework?.name ?? null,
     });
 
@@ -228,7 +239,7 @@ export class ScannerBridge {
       this._update({
         report,
         score: report?.score?.overall ?? 100,
-        violations: report?.violations ?? [],
+        violations: extractViolations(report),
         framework: (session.stack as any)?.framework?.name ?? null,
       });
     } catch (err) {
