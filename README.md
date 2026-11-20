@@ -10,7 +10,30 @@
 ![FluxAPI Score](https://img.shields.io/badge/FluxAPI_Score-82%2F100-blue)
 
 ```bash
+# Canonical package
+npx @fluxiapi/cli https://your-app.com -o report.html
+
+# Short alias — same thing
 npx flux-scan https://your-app.com -o report.html
+```
+
+### Sample output
+
+```text
+  Score: 84.9/100 (good)  |  jio-4g: 81/100
+
+  ⚡ Efficiency   ██████████████████░░ 92%
+  💾 Caching      ████████████░░░░░░░░ 62%
+  🔄 Patterns     ████████████████████ 99%
+
+  Issues Found:  🔴 1 critical   🟡 3 warnings   ℹ️ 1 info
+
+  Top Fixes:
+    E4  Over-fetching: GET /api/big (12KB, ~40 fields)   ⚡ 153ms faster
+    C2  Under-cached: GET /api/user — 100% redundant     ⚡ 33ms faster · 📉 2 fewer requests
+    E5  5 requests to same host within 50ms              ⚡ 44ms faster · 📉 4 fewer requests
+
+  Total Impact if Fixed:   ⚡ 255ms faster · 📉 8 fewer requests · 💾 17.9KB saved
 ```
 
 ---
@@ -24,7 +47,7 @@ npx flux-scan https://your-app.com -o report.html
 | **E1** | Request Waterfalls — sequential calls that could run in parallel | `Promise.all` / `useSuspenseQueries` | 🔴 Critical |
 | **E2** | Duplicate Requests — same endpoint called by multiple components | Shared `useQuery` hook | 🔴 Critical |
 | **E3** | N+1 Query Pattern — GET /products/1, /products/2 ×25 | Batch endpoint | 🔴 Critical |
-| **E4** | Payload Over-fetching — API returns 50 fields, app uses 6 | Sparse fieldsets / GraphQL | 🟡 Warning |
+| **E4** | Payload Over-fetching — large responses (high size + field count) likely returning unused data | Sparse fieldsets / GraphQL | 🟡 Warning |
 | **E5** | Batchable Requests — 5 calls to same host in tight window | Batch API / DataLoader | 🟡 Warning |
 
 ### 💾 Caching Rules
@@ -61,7 +84,10 @@ npx flux-scan https://your-app.com -o report.html
 ### CLI — Scan any URL from terminal
 
 ```bash
-# Zero install (recommended)
+# Zero install (recommended) — canonical package
+npx @fluxiapi/cli https://myapp.com -o report.html
+
+# Same command via the short unscoped alias
 npx flux-scan https://myapp.com -o report.html
 
 # Or install globally
@@ -289,7 +315,7 @@ const html = generateHtmlReport(report);
 ## GitHub Action
 
 ```yaml
-- uses: aswinsasi/fluxapi-scan-action@v1
+- uses: aswinsasi/fluxapi/packages/github-action@main
   with:
     url: https://staging.your-app.com
     threshold: 70
@@ -300,12 +326,19 @@ const html = generateHtmlReport(report);
 
 ## Network-Adjusted Scoring
 
-| Network | Latency | Bandwidth | Example Score |
-|---------|---------|-----------|---------------|
-| WiFi | 1.0× | 1.0× | 85/100 |
-| Jio 4G | 1.8× | 2.5× | 62/100 |
-| Airtel 3G | 3.0× | 5.0× | 45/100 |
-| BSNL 2G | 8.0× | 15.0× | 23/100 |
+Multipliers come straight from `NETWORK_PROFILES` in the core engine.
+
+| Network | Latency | Bandwidth |
+|---------|---------|-----------|
+| WiFi / Fiber | 1.0× | 1.0× |
+| 4G LTE | 1.5× | 1.3× |
+| Jio 4G | 1.8× | 1.5× |
+| Airtel 4G | 1.6× | 1.4× |
+| 3G | 3.0× | 2.5× |
+| Airtel 3G | 3.2× | 2.8× |
+| Slow 3G | 5.0× | 4.0× |
+| 2G | 6.0× | 5.0× |
+| BSNL 2G | 7.0× | 6.0× |
 
 ---
 
@@ -331,6 +364,18 @@ landing/             — Marketing site
 | [`@fluxiapi/react`](https://www.npmjs.com/package/@fluxiapi/react) | React DevTools + hooks | 42 KB |
 
 ## Changelog
+
+> Current published versions: `@fluxiapi/scan` & `@fluxiapi/cli` **v0.4.1** · `@fluxiapi/react` & `@fluxiapi/vue` **v0.3.3**
+
+### Unreleased — Reliability repairs
+- **CLI** now reads response bodies via `Network.getResponseBody`, so under-caching (C2) and JSON field counts (E4) work on real scans; added `--threshold` flag and navigation capture
+- **React & Vue DevTools** — fixed an empty Violations tab (bridges now read per-rule violations correctly)
+- **`flux-scan`** unscoped alias package so `npx flux-scan` works alongside `npx @fluxiapi/cli`
+- CLI `--version` is now sourced from `package.json` at build time (no more drift)
+
+### v0.4.1 — Shareable score badge
+- Shields.io score badge for your README (`generateBadgeUrl` / `generateBadgeMarkdown`)
+- HTML report improvements
 
 ### v0.3.2 — Vue & React DevTools
 - **`@fluxiapi/vue`** — Drop-in `<FluxDevTools />` for Vue 3 / Nuxt
