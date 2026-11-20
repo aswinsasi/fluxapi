@@ -1,0 +1,32 @@
+{
+  "name": "flux-scan",
+  "version": "0.4.1",
+  "description": "npx flux-scan — unscoped alias for @fluxiapi/cli. Scan any URL for API anti-patterns.",
+  "author": "Aswin <aswin@fluxapi.dev>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aswinsasi/fluxapi.git",
+    "directory": "packages/flux-scan"
+  },
+  "homepage": "https://fluxapi-phi.vercel.app",
+  "bin": {
+    "flux-scan": "./bin.js"
+  },
+  "scripts": {
+    "build": "node -e \"process.stdout.write('flux-scan: no build step\\n')\"",
+    "test": "node -e \"process.stdout.write('flux-scan: no tests\\n')\"",
+    "lint": "node -e \"process.stdout.write('flux-scan: no lint\\n')\""
+  },
+  "files": [
+    "bin.js",
+    "README.md"
+  ],
+  "dependencies": {
+    "@fluxiapi/cli": "^0.4.1"
+  },
+  "keywords": ["fluxapi", "api", "scanner", "cli", "performance", "flux-scan"],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

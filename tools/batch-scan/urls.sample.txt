@@ -1,0 +1,62 @@
+# FluxAPI 50-URL test list
+# Public homepages, scanned logged-out. Chosen to favour client-side
+# API traffic (SPAs / consumer apps). Notes:
+#  - Some sites use bot protection (Cloudflare etc.) and may block the
+#    headless browser — those are recorded as failures, which is itself data.
+#  - Logged-out homepages often fire little API traffic → "low signal".
+#    That outcome is part of the answer, not a bug.
+#  - Copy this file, trim/extend it, and pass --urls <yourfile>.
+
+# ── Indian consumer apps / SPAs ──
+flipkart.com
+myntra.com
+ajio.com
+nykaa.com
+swiggy.com
+zomato.com
+bigbasket.com
+makemytrip.com
+bookmyshow.com
+cleartrip.com
+paytm.com
+groww.in
+zerodha.com
+meesho.com
+unacademy.com
+practo.com
+policybazaar.com
+naukri.com
+magicbricks.com
+cars24.com
+cricbuzz.com
+moneycontrol.com
+ndtv.com
+indianexpress.com
+hotstar.com
+
+# ── Global SPAs / dev tools ──
+github.com
+gitlab.com
+dev.to
+hashnode.com
+vercel.com
+netlify.com
+stackoverflow.com
+reddit.com
+producthunt.com
+notion.so
+linear.app
+figma.com
+airbnb.com
+booking.com
+spotify.com
+medium.com
+pinterest.com
+twitch.tv
+coursera.org
+udemy.com
+npmjs.com
+codepen.io
+replit.com
+vimeo.com
+soundcloud.com
