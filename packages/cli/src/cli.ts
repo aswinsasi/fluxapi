@@ -23,6 +23,37 @@
 
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
+import { fastHash } from '@fluxiapi/scan';
+
+// Injected at build time by tsup from package.json (see tsup.config.ts).
+// Falls back to a literal if the bundle is run without the define in place.
+declare const __CLI_VERSION__: string;
+const CLI_VERSION = typeof __CLI_VERSION__ !== 'undefined' ? __CLI_VERSION__ : '0.4.1';
+
+// ─── Response Body Analysis ─────────────────────────────────────
+// Mirrors packages/scan/src/observer/interceptor.ts so CLI scans produce
+// the same bodyHash / jsonFieldCount the browser scanner would, keeping
+// rules C2/C3/P2 (identical-response detection) and E4 (field count) alive.
+
+function countJsonFields(parsed: unknown): number | null {
+  if (parsed && typeof parsed === 'object') {
+    return Array.isArray(parsed)
+      ? (parsed.length > 0 ? Object.keys(parsed[0] as object).length : 0)
+      : Object.keys(parsed as object).length;
+  }
+  return null;
+}
+
+/** Hash + field count for a JSON body (text already decoded). */
+function analyzeJsonBody(text: string, bodySize: number): { bodyHash: string; jsonFieldCount: number | null } {
+  try {
+    const parsed = JSON.parse(text);
+    return { bodyHash: fastHash(text), jsonFieldCount: countJsonFields(parsed) };
+  } catch {
+    // Content-Type said JSON but body didn't parse — hash the size instead.
+    return { bodyHash: fastHash(String(bodySize)), jsonFieldCount: null };
+  }
+}
 
 // ─── Argument Parser ────────────────────────────────────────────
 
@@ -35,6 +66,7 @@ interface CliArgs {
   session: string | null;
   headless: boolean;
   interact: boolean;
+  threshold: number;
   help: boolean;
   version: boolean;
 }
@@ -49,6 +81,7 @@ function parseArgs(argv: string[]): CliArgs {
     session: null,
     headless: true,
     interact: false,
+    threshold: 50,
     help: false,
     version: false,
   };
@@ -65,6 +98,12 @@ function parseArgs(argv: string[]): CliArgs {
       case '--output': case '-o': args.output = next; i++; break;
       case '--format': case '-f': args.format = next as any; i++; break;
       case '--session': case '-s': args.session = next; i++; break;
+      case '--threshold': case '-t': {
+        const parsed = parseInt(next, 10);
+        args.threshold = Number.isFinite(parsed) ? Math.min(100, Math.max(0, parsed)) : 50;
+        i++;
+        break;
+      }
       case '--no-headless': args.headless = false; break;
       case '--interact': args.interact = true; break;
       case '--help': case '-h': args.help = true; break;
@@ -126,6 +165,7 @@ OPTIONS
   -o, --output <file>    Output file path (.html or .json)
   -f, --format <fmt>     Output format: console | html | json
   -s, --session <file>   Analyze saved session JSON (skip live scan)
+  -t, --threshold <n>    Min passing score 0-100 (default: 50; exit 1 if below)
       --no-headless      Show browser window during scan
       --interact         Manual browse mode (press Enter to stop)
   -h, --help             Show this help
@@ -143,7 +183,7 @@ DETECTS
   E1  Request Waterfalls       Sequential calls that could be parallel
   E2  Duplicate Requests       Same endpoint hit from multiple components
   E3  N+1 Pattern              GET /items/1, /items/2 ... x25
-  E4  Payload Over-fetching    Responses with unused fields (>60% waste)
+  E4  Payload Over-fetching    Large responses likely returning unused data
   E5  Batchable Requests       Multiple calls to same service in tight window
 
   💾 Caching
@@ -171,8 +211,8 @@ SCORING
   0-49    🔴 Poor — Significant API anti-patterns detected
 
 EXIT CODES
-  0  Score >= 50 (pass)
-  1  Score < 50  (fail — useful for CI/CD)
+  0  Score >= threshold (pass; threshold defaults to 50)
+  1  Score <  threshold (fail — useful for CI/CD, set with --threshold)
   2  Fatal error
 `;
 
@@ -260,12 +300,55 @@ async function liveScan(url: string, args: CliArgs): Promise<any> {
   // Use CDP to capture detailed network timing
   const client = await page.createCDPSession();
   await client.send('Network.enable');
+  await client.send('Page.enable');
 
   const pendingRequests = new Map<string, any>();
+
+  // Navigation tracking + monotonic↔wall-clock alignment.
+  // CDP Network timestamps are MonotonicTime; Page events give us only
+  // wall-clock. We capture the offset from the first requestWillBeSent
+  // (which carries both wallTime and timestamp) so navigation timestamps
+  // land on the same clock as request.startTime — P1 compares the two.
+  const navigations: any[] = [];
+  let navSeq = 0;
+  let lastRoute: string | null = null;
+  let lastNavMono: number | null = null;
+  let monoOffsetMs: number | null = null; // wallMs - monoMs
+  const bodyPromises: Promise<void>[] = [];
+
+  const routeOf = (u: string): string => {
+    try { const p = new URL(u, url); return p.pathname + p.search; }
+    catch { return u; }
+  };
+  const recordNav = (toUrl: string, trigger: string) => {
+    const to = routeOf(toUrl);
+    if (to === lastRoute) return; // ignore no-op re-navigations
+    const mono = monoOffsetMs !== null ? Date.now() - monoOffsetMs : 0;
+    navigations.push({
+      id: `nav_${++navSeq}`,
+      fromRoute: lastRoute ?? '',
+      toRoute: to,
+      timestamp: mono,
+      trigger: lastRoute === null ? 'initial' : trigger,
+      dwellTime: lastNavMono !== null ? Math.max(0, mono - lastNavMono) : 0,
+    });
+    lastRoute = to;
+    lastNavMono = mono;
+  };
+  client.on('Page.frameNavigated', (p: any) => {
+    if (p.frame && !p.frame.parentId) recordNav(p.frame.url, 'pushState');
+  });
+  client.on('Page.navigatedWithinDocument', (p: any) => {
+    recordNav(p.url, 'pushState');
+  });
 
   client.on('Network.requestWillBeSent', (params: any) => {
     reqSeq++;
     const { requestId, request, timestamp, initiator } = params;
+
+    if (monoOffsetMs === null && typeof params.wallTime === 'number') {
+      monoOffsetMs = params.wallTime * 1000 - timestamp * 1000;
+    }
 
     pendingRequests.set(requestId, {
       id: `fx_cli_${reqSeq}`,
@@ -320,8 +403,8 @@ async function liveScan(url: string, args: CliArgs): Promise<any> {
         acceptEncoding: false,
         contentEncoding: response.headers?.['content-encoding'] || null,
       },
-      bodyHash: `cdp_${requestId.slice(0, 8)}`,
-      jsonFieldCount: null,
+      bodyHash: '',           // filled in loadingFinished via getResponseBody
+      jsonFieldCount: null,   // filled in loadingFinished for JSON responses
       fromCache: response.fromDiskCache || response.fromServiceWorker || false,
     };
   });
@@ -334,6 +417,33 @@ async function liveScan(url: string, args: CliArgs): Promise<any> {
     req.endTime = timestamp * 1000;
     req.duration = req.endTime - req.startTime;
     if (req.response) req.response.bodySize = encodedDataLength || req.response.bodySize;
+
+    const resp = req.response;
+    if (resp) {
+      const ct = (resp.contentType || '').toLowerCase();
+      const size = resp.bodySize || 0;
+      if (ct.includes('application/json')) {
+        // Fetch the real body so we can hash content (C2/C3/P2) and count
+        // JSON fields (E4). Must complete before the browser closes.
+        const p = client.send('Network.getResponseBody', { requestId })
+          .then((res: any) => {
+            const text = res.base64Encoded
+              ? Buffer.from(res.body, 'base64').toString('utf-8')
+              : res.body;
+            const a = analyzeJsonBody(text, size);
+            resp.bodyHash = a.bodyHash;
+            resp.jsonFieldCount = a.jsonFieldCount;
+          })
+          .catch(() => {
+            // Body unavailable (evicted / redirect / no content) — fall back.
+            resp.bodyHash = fastHash(String(size) + ct);
+          });
+        bodyPromises.push(p as Promise<void>);
+      } else {
+        resp.bodyHash = fastHash(String(size) + ct);
+      }
+    }
+
     requests.push(req);
     pendingRequests.delete(requestId);
   });
@@ -367,6 +477,9 @@ async function liveScan(url: string, args: CliArgs): Promise<any> {
     await countdown(args.duration, spinner);
   }
 
+  spinner.update('Reading response bodies...');
+  await Promise.allSettled(bodyPromises);
+
   spinner.update('Closing browser...');
   await browser.close();
 
@@ -382,7 +495,7 @@ async function liveScan(url: string, args: CliArgs): Promise<any> {
     startTime: requests[0]?.startTime || 0,
     endTime: requests[requests.length - 1]?.endTime || 0,
     requests,
-    navigations: [],
+    navigations,
     stack: { framework: null, dataLibrary: null, apiType: 'rest', backendHints: detectBackend(requests) },
     config: {
       duration: args.duration,
@@ -429,7 +542,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
 
   if (args.version) {
-    console.log('flux-scan v0.4.0');
+    console.log(`flux-scan v${CLI_VERSION}`);
     process.exit(0);
   }
 
@@ -479,10 +592,10 @@ async function main() {
     }
   }
 
-  // Exit code based on score
-  const exitCode = report.score.overall < 50 ? 1 : 0;
+  // Exit code based on score vs. threshold
+  const exitCode = report.score.overall < args.threshold ? 1 : 0;
   if (exitCode === 1) {
-    console.log('  ⚠️  Score below 50 — exiting with code 1 (CI failure)');
+    console.log(`  ⚠️  Score ${report.score.overall} below threshold ${args.threshold} — exiting with code 1 (CI failure)`);
   }
   process.exit(exitCode);
 }
